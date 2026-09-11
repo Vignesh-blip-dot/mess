@@ -6,6 +6,8 @@ import {
   ShieldCheck,
   ArrowRight,
   AlertCircle,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -14,6 +16,7 @@ export function SignInPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -108,13 +111,20 @@ export function SignInPage() {
                   </div>
                   <input
                     id="signin-password-input"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    className="w-full pl-9 pr-3 py-2 text-sm bg-[#fcfbf9] border border-[#d5cebf] rounded-sm focus:outline-none focus:border-[#193d2c] focus:ring-1 focus:ring-[#193d2c] transition-colors"
+                    className="w-full pl-9 pr-10 py-2 text-sm bg-[#fcfbf9] border border-[#d5cebf] rounded-sm focus:outline-none focus:border-[#193d2c] focus:ring-1 focus:ring-[#193d2c] transition-colors"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#59635e] hover:text-[#131715] cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
                 </div>
               </div>
 
