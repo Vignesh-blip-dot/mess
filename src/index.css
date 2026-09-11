@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f8f7f4;
+  --paper-line: #e5e0d5;
+  --ink: #131715;
+  --ink-faint: #59635e;
+  --ink-muted: #858f89;
+  --accent: #193d2c;
+  --accent-hover: #122e21;
+  --accent-light: #e6f0ea;
+  --accent-ink: #f7f9f7;
+  --gold-accent: #9e743a;
+  --gold-bg: #faf3e8;
+  --stamp-red: #942426;
+  --stamp-red-bg: #faeaea;
+  --card: #ffffff;
+  --card-elevated: #ffffff;
+  --card-subtle: #f5f2eb;
+}
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'Roboto Slab', Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+.font-mono-fig {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Luxury wax seal / physical red stamp styling */
+.ledger-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--stamp-red);
+  background: var(--stamp-red-bg);
+  border: 1.5px solid var(--stamp-red);
+  border-radius: 2px;
+  padding: 2px 7px;
+  transform: rotate(-1.5deg);
+  box-shadow: 0 1px 2px rgba(148, 36, 38, 0.12);
+}
+
+.ledger-stamp-green {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-light);
+  border: 1.5px solid var(--accent);
+  border-radius: 2px;
+  padding: 2px 7px;
+  transform: rotate(-1deg);
+  box-shadow: 0 1px 2px rgba(25, 61, 44, 0.12);
+}
+
+.ledger-stamp-gold {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--gold-accent);
+  background: var(--gold-bg);
+  border: 1.5px solid var(--gold-accent);
+  border-radius: 2px;
+  padding: 2px 7px;
+  box-shadow: 0 1px 2px rgba(158, 116, 58, 0.12);
+}
+
+/* Ruled ledger paper subtle lines */
+.ledger-ruled {
+  background-image: linear-gradient(to bottom, transparent 95%, var(--paper-line) 95%);
+  background-size: 100% 36px;
+}
+
+/* Touch active effects */
+@media (hover: hover) {
+  .touch-hover:hover {
+    background-color: rgba(25, 61, 44, 0.05);
+  }
+}
+
+/* Custom smooth luxury scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f0ece3;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #d4cec2;
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #aba394;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .report-page {
+    page-break-after: always;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+

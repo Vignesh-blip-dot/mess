@@ -1,0 +1,6 @@
+{
+  "name": "Mess Provisions Register",
+  "description": "A responsive hostel provisions ledger with real-time stock tracking, meal usage logging, daily headcount, and monthly expenditure reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
