@@ -44,13 +44,32 @@ export function CoordinatorsView() {
     let status = 'Off-duty';
     let currentAssign = userAssigns.length > 0 ? userAssigns[0] : null;
 
+    const currentMonth = new Date().getMonth();
+    const nextMonth = (currentMonth + 1) % 12;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
     for (const a of userAssigns) {
       if (a.duty_start_date <= today && a.duty_end_date >= today) {
         status = 'On-duty';
         currentAssign = a;
         break;
       } else if (a.duty_start_date > today && status !== 'On-duty') {
-        status = 'Next Month';
+        const startDate = new Date(a.duty_start_date);
+        const startMonth = startDate.getMonth();
+        const startYear = startDate.getFullYear();
+
+        const isCurrentMonth = startMonth === currentMonth && startYear === currentYear;
+        const isNextMonth = (startMonth === nextMonth) && (startYear === currentYear || (currentMonth === 11 && startMonth === 0 && startYear === currentYear + 1));
+
+        if (isCurrentMonth) {
+           status = 'Current Month';
+        } else if (isNextMonth) {
+           status = 'Next Month';
+        } else {
+           const monthName = startDate.toLocaleString('default', { month: 'long' });
+           status = startYear === currentYear ? monthName : `${monthName} ${startYear}`;
+        }
         currentAssign = a;
       }
     }
@@ -169,19 +188,17 @@ export function CoordinatorsView() {
                         )}
                       </td>
                       <td className="py-2.5 px-3 font-sans">
-                        {coord.status === 'On-duty' && (
+                        {coord.status === 'On-duty' ? (
                           <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#e6f0ea] text-[#193d2c] border border-[#193d2c]/30">
                             On-duty
                           </span>
-                        )}
-                        {coord.status === 'Next Month' && (
-                          <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#eef4ff] text-[#2c5282] border border-[#2c5282]/30">
-                            Next Month
-                          </span>
-                        )}
-                        {coord.status === 'Off-duty' && (
+                        ) : coord.status === 'Off-duty' ? (
                           <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#f5f2eb] text-[#59635e] border border-[#e5e0d5]">
                             Off-duty
+                          </span>
+                        ) : (
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#eef4ff] text-[#2c5282] border border-[#2c5282]/30">
+                            {coord.status}
                           </span>
                         )}
                       </td>

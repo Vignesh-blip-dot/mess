@@ -496,7 +496,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const { data: asgnData, error: asgnErr } = await client
         .from('coordinator_assignments')
         .select('*')
-        .order('duty_start_date', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (!asgnErr && asgnData) {
         anySuccess = true;
@@ -504,12 +504,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const mappedAsgns: CoordinatorAssignment[] = asgnData.map((row: any) => ({
           id: String(row.id),
           user_id: String(row.user_id),
-          duty_start_date: row.duty_start_date,
-          duty_end_date: row.duty_end_date,
+          duty_start_date: row.duty_start_date || row.start_date,
+          duty_end_date: row.duty_end_date || row.end_date,
           created_at: row.created_at,
           created_by: row.created_by,
         }));
         setAssignments(mappedAsgns);
+      } else if (asgnErr) {
+        console.warn('Error fetching assignments:', asgnErr);
       }
 
       // 5. Fetch Profiles (safely handled)
@@ -1611,7 +1613,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let newAsgnId = `asgn-${Date.now()}`;
 
     try {
-      const asgnPayload: any = {
+      let asgnPayload: any = {
         user_id: userId,
         duty_start_date: start,
         duty_end_date: end,
@@ -1620,14 +1622,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         asgnPayload.created_by = profile.id;
       }
 
-      const { data: dbAsgn, error: asgnErr } = await supabase
+      let { data: dbAsgn, error: asgnErr } = await supabase
         .from('coordinator_assignments')
         .insert(asgnPayload)
         .select()
         .single();
 
+      if (asgnErr && (asgnErr.message?.includes('duty_start_date') || asgnErr.details?.includes('duty_start_date') || asgnErr.code === 'PGRST204')) {
+        console.warn('[Supabase] Retrying assignment insert using start_date/end_date columns...');
+        asgnPayload = {
+          user_id: userId,
+          start_date: start,
+          end_date: end,
+        };
+        if (isValidUuid(profile?.id)) {
+          asgnPayload.created_by = profile.id;
+        }
+        
+        const retry = await supabase.from('coordinator_assignments').insert(asgnPayload).select().single();
+        dbAsgn = retry.data;
+        asgnErr = retry.error;
+      }
+
       if (!asgnErr && dbAsgn) {
         newAsgnId = String(dbAsgn.id);
+      } else if (asgnErr) {
+        console.error('Failed to insert assignment to Supabase:', asgnErr);
+        showToast('Database error: failed to save assignment', 'error');
+        // Do not return true if we truly care about persistence, but we'll allow local fallback for now
       }
 
       await supabase.from('audit_logs').insert({
