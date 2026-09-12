@@ -8,6 +8,7 @@ import { IngredientsView } from './components/IngredientsView';
 import { LogPurchaseView } from './components/LogPurchaseView';
 import { LogUsageView } from './components/LogUsageView';
 import { StockAdjustmentView } from './components/StockAdjustmentView';
+import { AdjustmentRequestsView } from './components/AdjustmentRequestsView';
 import { AddIngredientView } from './components/AddIngredientView';
 import { DailyUsageView } from './components/DailyUsageView';
 import { HeadcountView } from './components/HeadcountView';
@@ -44,6 +45,8 @@ function MainAppShell() {
         return <LogUsageView key="log-usage" />;
       case 'adjustment':
         return <StockAdjustmentView key="adjustment" />;
+      case 'adjustment-requests':
+        return <AdjustmentRequestsView key="adjustment-requests" />;
       case 'add-ingredient':
         return <AddIngredientView key="add-ingredient" />;
       case 'daily-usage':

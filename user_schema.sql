@@ -1,0 +1,1 @@
+-- (pasting the user schema here to have it locally for reference)

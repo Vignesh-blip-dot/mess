@@ -76,6 +76,8 @@ export interface AuditLogEntry {
   entity_name: string;
   highlight_reason?: 'adjustment' | 'grace_edit' | null;
   reason?: string | null;
+  before_value?: any;
+  after_value?: any;
   profiles?: {
     name: string;
   };
@@ -90,12 +92,24 @@ export interface CoordinatorAssignment {
   created_by?: string;
 }
 
+export interface StockAdjustmentRequestPayload {
+  reqId: string;
+  ingredientId: string;
+  quantityChange: number;
+  newStock: number;
+  reason: string;
+  remarks: string;
+  created_at?: string;
+  created_by?: string;
+}
+
 export type PageId =
   | 'dashboard'
   | 'ingredients'
   | 'log-purchase'
   | 'log-usage'
   | 'adjustment'
+  | 'adjustment-requests'
   | 'add-ingredient'
   | 'daily-usage'
   | 'headcount'

@@ -4,7 +4,7 @@ import { ShieldCheck, Search, Filter } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export function AuditLogView() {
-  const { auditLogs } = useApp();
+  const { auditLogs, ingredients } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
 
@@ -122,6 +122,110 @@ export function AuditLogView() {
                     minute: '2-digit',
                   });
 
+                  let renderedReason: React.ReactNode = log.reason;
+                  let displayAction = log.action;
+
+                  if (log.reason?.startsWith('ADJ_REQ:')) {
+                    try {
+                      const jsonStr = log.reason.substring(8);
+                      const data = JSON.parse(jsonStr);
+                      const ingredient = ingredients.find(i => i.ingredient_id === data.ingredientId);
+                      const ingName = ingredient ? ingredient.name : 'Unknown Item';
+                      const sign = data.quantityChange > 0 ? '+' : '';
+                      const remarksStr = data.remarks ? ` - ${data.remarks}` : '';
+                      
+                      renderedReason = (
+                        <div className="flex flex-col gap-0.5 inline-flex align-middle">
+                          <span className="font-semibold text-[#131715]">
+                            Pending Request: {sign}{data.quantityChange} {ingredient?.unit || ''} {ingName}
+                          </span>
+                          <span className="text-[#59635e] text-[11px]">
+                            Reason: {data.reason}{remarksStr}
+                          </span>
+                        </div>
+                      );
+                    } catch (e) {
+                      renderedReason = <span className="text-[#131715]">{log.reason}</span>;
+                    }
+                  } else if (log.reason?.startsWith('ADJ_RES:')) {
+                    try {
+                      const jsonStr = log.reason.substring(8);
+                      const data = JSON.parse(jsonStr);
+                      
+                      renderedReason = (
+                        <span className="font-semibold text-[#131715]">
+                          Request {data.status === 'approved' ? 'Approved' : 'Denied'} (Ref: {data.reqId})
+                        </span>
+                      );
+                    } catch (e) {
+                      renderedReason = <span className="text-[#131715]">{log.reason}</span>;
+                    }
+                  } else if (log.action === 'ADJUSTMENT_REQUEST') {
+                     try {
+                       const data = JSON.parse(log.reason || '{}');
+                       const ingredient = ingredients.find(i => i.ingredient_id === data.ingredientId);
+                       const ingName = ingredient ? ingredient.name : 'Unknown Item';
+                       const sign = data.quantityChange > 0 ? '+' : '';
+                       const remarksStr = data.remarks ? ` - ${data.remarks}` : '';
+                       
+                       renderedReason = (
+                         <div className="flex flex-col gap-0.5 inline-flex align-middle">
+                           <span className="font-semibold text-[#131715]">
+                             Pending Request: {sign}{data.quantityChange} {ingredient?.unit || ''} {ingName}
+                           </span>
+                           <span className="text-[#59635e] text-[11px]">
+                             Reason: {data.reason}{remarksStr}
+                           </span>
+                         </div>
+                       );
+                     } catch (e) {
+                       renderedReason = <span className="text-[#131715]">{log.reason}</span>;
+                     }
+                  } else if (log.action === 'insert' && log.entity_name === 'stock_transactions' && log.after_value) {
+                    const data = log.after_value;
+                    const ingredient = ingredients.find(i => i.ingredient_id === data.ingredient_id);
+                    const ingName = ingredient ? ingredient.name : 'Unknown Item';
+                    const unit = ingredient?.unit || '';
+                    if (data.txn_type === 'purchase') {
+                      displayAction = 'LOG_PURCHASE';
+                      renderedReason = <span className="text-[#131715]">Purchased {data.quantity} {unit} {ingName} for ₹{data.total_cost?.toLocaleString('en-IN')}{data.vendor ? ` from ${data.vendor}` : ''}</span>;
+                    } else if (data.txn_type === 'usage') {
+                      displayAction = 'LOG_USAGE';
+                      renderedReason = <span className="text-[#131715]">Deducted {Math.abs(data.quantity)} {unit} {ingName} for {data.meal_type ? data.meal_type.toUpperCase() : 'kitchen'} (₹{data.total_cost?.toLocaleString('en-IN')}) {log.reason && log.reason !== 'USAGE' ? `- ${log.reason}` : ''}</span>;
+                    } else if (data.txn_type === 'adjustment') {
+                      displayAction = 'STOCK_ADJUSTMENT';
+                      renderedReason = <span className="text-[#131715]">Adjusted {data.quantity} {unit} {ingName} (₹{data.total_cost?.toLocaleString('en-IN')}) {log.reason ? `- ${log.reason}` : ''}</span>;
+                    } else {
+                      renderedReason = <span className="text-[#8b948f] italic">Added new transaction record</span>;
+                    }
+                  } else if (log.action === 'update' && log.entity_name === 'ingredients' && log.after_value) {
+                    displayAction = 'UPDATE_INGREDIENT';
+                    const ingName = log.after_value.name || 'Unknown Item';
+                    renderedReason = <span className="text-[#131715]">Updated ingredient "{ingName}" details</span>;
+                  } else if (log.action === 'insert' && log.entity_name === 'daily_headcount' && log.after_value) {
+                    displayAction = 'LOG_HEADCOUNT';
+                    const d = log.after_value;
+                    renderedReason = <span className="text-[#131715]">Logged headcount for {d.attendance_date}: {d.student_count ?? '?'} students, {d.guest_count ?? '?'} guests</span>;
+                  } else if (log.action === 'update' && log.entity_name === 'daily_headcount' && log.after_value) {
+                    displayAction = 'UPDATE_HEADCOUNT';
+                    const d = log.after_value;
+                    renderedReason = <span className="text-[#131715]">Updated headcount for {d.attendance_date}: {d.student_count ?? '?'} students, {d.guest_count ?? '?'} guests</span>;
+                  } else if (!log.reason) {
+                    renderedReason = (
+                      <span className="text-[#8b948f] italic">
+                        {log.action === 'insert' ? 'Added new record' : 'Modified record'}
+                      </span>
+                    );
+                  } else {
+                    renderedReason = <span className="text-[#131715]">{log.reason}</span>;
+                  }
+
+                  // Force the ADJUSTMENT stamp for requests and responses if they don't have it
+                  let activeStampLabel = stampLabel;
+                  if (!activeStampLabel && (log.reason?.startsWith('ADJ_REQ:') || log.reason?.startsWith('ADJ_RES:') || log.action === 'ADJUSTMENT_REQUEST' || log.action === 'ADJUSTMENT_APPROVAL' || log.action === 'ADJUSTMENT_DENIAL')) {
+                    activeStampLabel = 'ADJUSTMENT';
+                  }
+
                   return (
                     <tr key={log.id} className="hover:bg-[#193d2c]/5 transition-colors">
                       <td className="py-2.5 px-3 text-[#59635e] whitespace-nowrap text-xs">
@@ -132,25 +236,25 @@ export function AuditLogView() {
                       </td>
                       <td className="py-2.5 px-3 text-xs whitespace-nowrap">
                         <span className="px-2 py-0.5 rounded-sm bg-[#f5f2eb] border border-[#e5e0d5] font-medium text-[#131715]">
-                          {log.action}
+                          {displayAction}
                         </span>
                       </td>
                       <td className="py-2.5 px-3 text-xs text-[#59635e] whitespace-nowrap">
                         {log.entity_name}
                       </td>
                       <td className="py-2.5 px-3 font-sans text-xs">
-                        {stampLabel && (
+                        {activeStampLabel && (
                           <span
                             className={
-                              stampLabel === 'ADJUSTMENT'
-                                ? 'ledger-stamp mr-1.5'
-                                : 'inline-block px-2 py-0.5 text-[10px] font-bold rounded-sm bg-[#faf4e6] text-[#996515] border border-[#996515]/40 mr-1.5'
+                              activeStampLabel === 'ADJUSTMENT'
+                                ? 'ledger-stamp mr-2 align-middle'
+                                : 'inline-block px-2 py-0.5 text-[10px] font-bold rounded-sm bg-[#faf4e6] text-[#996515] border border-[#996515]/40 mr-2 align-middle'
                             }
                           >
-                            {stampLabel}
+                            {activeStampLabel}
                           </span>
                         )}
-                        <span className="text-[#131715]">{log.reason}</span>
+                        {renderedReason}
                       </td>
                     </tr>
                   );

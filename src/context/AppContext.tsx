@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   UserProfile,
   CoordinatorAccessLevel,
@@ -65,25 +65,23 @@ interface AppContextType {
   loginWithSupabase: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   switchDemoProfile: (profileId: string, customAccess?: CoordinatorAccessLevel) => void;
-  logPurchase: (data: {
-    ingredientId: string;
-    quantity: number;
-    totalCost: number;
-    usageDate: string;
-    vendor?: string;
-  }) => Promise<boolean>;
-  logUsage: (data: {
-    ingredientId: string;
-    quantity: number;
-    usageDate: string;
-    mealType?: MealType | null;
-  }) => Promise<boolean>;
+  logPurchaseBatch: (data: { items: { ingredientId: string; quantity: number; totalCost: number }[]; usageDate: string; vendor?: string }) => Promise<boolean>;
+  logUsageBatch: (data: { items: { ingredientId: string; quantity: number }[]; usageDate: string; mealType?: 'breakfast' | 'lunch' | 'dinner' | '' }) => Promise<boolean>;
   stockAdjustment: (data: {
     ingredientId: string;
     quantityChange: number;
     usageDate: string;
     reason: string;
   }) => Promise<boolean>;
+  requestStockAdjustment: (data: {
+    ingredientId: string;
+    quantityChange: number;
+    newStock: number;
+    reason: string;
+    remarks: string;
+  }) => Promise<boolean>;
+  resolveStockAdjustment: (reqId: string, status: 'approved' | 'denied', payload: any) => Promise<boolean>;
+  pendingAdjustmentRequests: any[];
   addIngredient: (data: {
     name: string;
     name_telugu?: string;
@@ -232,9 +230,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const safeInsertAuditLog = async (payload: any) => {
     const client = getSupabase();
     try {
-      const { error } = await client.from('audit_log').insert(payload);
-      if (error && (error.message?.includes('Could not find') || error.code === '42P01')) {
-        await client.from('audit_logs').insert(payload);
+      const { error } = await client.from('audit_logs').insert(payload);
+      if (error) {
+        // Fallback to older 'audit_log' table which doesn't have the user_name column
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.user_name;
+        await client.from('audit_log').insert(fallbackPayload);
       }
     } catch (e) {
       console.warn('Audit log write error:', e);
@@ -539,10 +540,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // 6. Fetch Audit Logs (check both table names)
       let auditRows: any[] | null = null;
       const { data: aud1, error: aErr1 } = await client
-        .from('audit_log')
+        .from('audit_logs')
         .select('*, profiles(name)')
         .order('created_at', { ascending: false })
         .limit(100);
+
+      console.log('[DEBUG] audit_logs fetch:', { count: aud1?.length, err: aErr1 });
 
       if (!aErr1 && aud1) {
         auditRows = aud1;
@@ -550,10 +553,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         totalCount += aud1.length;
       } else {
         const { data: aud2, error: aErr2 } = await client
-          .from('audit_logs')
+          .from('audit_log')
           .select('*, profiles(name)')
           .order('created_at', { ascending: false })
           .limit(100);
+        console.log('[DEBUG] fallback audit_log fetch:', { count: aud2?.length, err: aErr2 });
         if (!aErr2 && aud2) {
           auditRows = aud2;
           anySuccess = true;
@@ -562,6 +566,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (auditRows) {
+        console.log('[DEBUG] first row of auditRows:', auditRows[0]);
         setAuditLogs(
           auditRows.map((row: any) => ({
             id: String(row.id),
@@ -572,6 +577,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             entity_name: row.entity_name,
             highlight_reason: row.highlight_reason,
             reason: row.reason,
+            before_value: row.before_value,
+            after_value: row.after_value,
             profiles: row.profiles,
           }))
         );
@@ -659,6 +666,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_summaries' }, () => {
         refreshDataFromSupabase();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_logs' }, () => {
+        refreshDataFromSupabase();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_log' }, () => {
+        refreshDataFromSupabase();
+      })
       .subscribe();
 
     return () => {
@@ -685,6 +698,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (accessLevel === 'view') return 'Coordinator (view only)';
     return 'Coordinator (no active access)';
   })();
+
+  const pendingAdjustmentRequests = useMemo(() => {
+    const requests = new Map<string, any>();
+    const approvals = new Set<string>();
+
+    // Process from oldest to newest or newest to oldest?
+    // transactions is newest first (descending). 
+    for (const txn of transactions) {
+      if (txn.txn_type === 'adjustment' && txn.reason?.startsWith('ADJ_RES:')) {
+        try {
+          const payloadStr = txn.reason.substring(8);
+          const data = JSON.parse(payloadStr);
+          if (data.reqId) approvals.add(data.reqId);
+        } catch {}
+      } else if (txn.txn_type === 'adjustment' && txn.reason?.startsWith('ADJ_REQ:')) {
+        try {
+          const payloadStr = txn.reason.substring(8);
+          const data = JSON.parse(payloadStr);
+          if (data.reqId && !approvals.has(data.reqId)) {
+            requests.set(data.reqId, {
+              ...data,
+              created_at: txn.created_at,
+              created_by: txn.created_by,
+              created_by_name: txn.profiles?.name || 'Coordinator'
+            });
+          }
+        } catch {}
+      }
+    }
+    return Array.from(requests.values());
+  }, [transactions]);
 
   const navigateTo = (page: PageId) => {
     setCurrentPage(page);
@@ -953,69 +997,67 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // =========================================================================
 
   // 1. Log a Purchase
-  const logPurchase = async ({
-    ingredientId,
-    quantity,
-    totalCost,
+
+  const logPurchaseBatch = async ({
+    items,
     usageDate,
     vendor,
   }: {
-    ingredientId: string;
-    quantity: number;
-    totalCost: number;
+    items: { ingredientId: string; quantity: number; totalCost: number }[];
     usageDate: string;
     vendor?: string;
   }) => {
-    const ing = ingredients.find((i) => i.ingredient_id === ingredientId);
-    if (!ing) {
-      showToast('Ingredient not found', true);
-      return false;
-    }
+    if (items.length === 0) return false;
 
-    // Weighted average cost update
-    const currentStock = ing.current_stock;
-    const currentVal = currentStock * ing.current_price;
-    const addedStock = quantity;
-    const addedVal = totalCost;
-    const updatedStock = Math.round((currentStock + addedStock) * 100) / 100;
-    const updatedPrice =
-      updatedStock > 0
-        ? Math.round(((currentVal + addedVal) / updatedStock) * 100) / 100
-        : ing.current_price;
+    const newTxns: StockTransaction[] = [];
+    const updatedIngsMap = new Map();
+    const payloads: any[] = [];
+    const auditLogsToAdd: any[] = [];
+    
+    let now = Date.now();
 
-    const newTxn: StockTransaction = {
-      id: `txn-${Date.now()}`,
-      ingredient_id: ingredientId,
-      txn_type: 'purchase',
-      quantity,
-      total_cost: totalCost,
-      usage_date: usageDate,
-      vendor: vendor || null,
-      meal_type: null,
-      reason: null,
-      created_at: new Date().toISOString(),
-      created_by: profile?.id || 'usr-anon',
-      created_by_name: profile?.name || 'Staff',
-      ingredients: {
-        name: ing.name,
-        category: ing.category,
-        unit: ing.unit,
-      },
-    };
+    for (const item of items) {
+      const { ingredientId, quantity, totalCost } = item;
+      const ing = ingredients.find((i) => i.ingredient_id === ingredientId) || updatedIngsMap.get(ingredientId);
+      if (!ing) {
+        showToast('Ingredient not found', true);
+        return false;
+      }
 
-    // Optimistic UI updates
-    setIngredients((prev) =>
-      prev.map((item) =>
-        item.ingredient_id === ingredientId
-          ? { ...item, current_stock: updatedStock, current_price: updatedPrice }
-          : item
-      )
-    );
-    setTransactions((prev) => [newTxn, ...prev]);
+      // Weighted average cost update
+      const currentStock = ing.current_stock;
+      const currentVal = currentStock * ing.current_price;
+      const addedStock = quantity;
+      const addedVal = totalCost;
+      const updatedStock = Math.round((currentStock + addedStock) * 100) / 100;
+      const updatedPrice =
+        updatedStock > 0
+          ? Math.round(((currentVal + addedVal) / updatedStock) * 100) / 100
+          : ing.current_price;
 
-    // Send write directly to Supabase
-    try {
-      const client = getSupabase();
+      updatedIngsMap.set(ingredientId, { ...ing, current_stock: updatedStock, current_price: updatedPrice });
+
+      const newTxn: StockTransaction = {
+        id: `txn-${now++}`,
+        ingredient_id: ingredientId,
+        txn_type: 'purchase',
+        quantity,
+        total_cost: totalCost,
+        usage_date: usageDate,
+        vendor: vendor || null,
+        meal_type: null,
+        reason: null,
+        created_at: new Date().toISOString(),
+        created_by: profile?.id || 'usr-anon',
+        created_by_name: profile?.name || 'Staff',
+        ingredients: {
+          name: ing.name,
+          category: ing.category,
+          unit: ing.unit,
+        },
+      };
+      newTxns.push(newTxn);
+
       const txnPayload: any = {
         ingredient_id: ingredientId,
         txn_type: 'purchase',
@@ -1027,161 +1069,214 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (isValidUuid(profile?.id)) {
         txnPayload.created_by = profile.id;
       }
-      await client.from('stock_transactions').insert(txnPayload);
+      payloads.push(txnPayload);
 
-      // Update stock & unit price on ingredients table (safely handle schema variations)
-      try {
-        await client
-          .from('ingredients')
-          .update({ current_stock: updatedStock, current_price: updatedPrice })
-          .eq('id', ingredientId);
-      } catch {
-        try {
-          await client
-            .from('ingredients')
-            .update({ current_price: updatedPrice })
-            .eq('id', ingredientId);
-        } catch {}
-      }
-
-      // Record Audit Log
-      await safeInsertAuditLog({
+      // Audit Log fallback prep
+      auditLogsToAdd.push({
         user_id: isValidUuid(profile?.id) ? profile.id : null,
         user_name: profile?.name || 'Staff',
         action: 'LOG_PURCHASE',
         entity_name: 'stock_transactions',
         reason: `Purchased ${quantity} ${ing.unit} ${ing.name} for ₹${totalCost.toLocaleString('en-IN')}${vendor ? ` from ${vendor}` : ''}`,
       });
-    } catch (dbErr) {
-      console.warn('Database write warning; saved to local state:', dbErr);
     }
 
-    showToast(`Purchase logged: +${quantity} ${ing.unit} ${ing.name}`);
-    return true;
-  };
-
-  // 2. Log Meal Usage
-  const logUsage = async ({
-    ingredientId,
-    quantity,
-    usageDate,
-    mealType,
-  }: {
-    ingredientId: string;
-    quantity: number;
-    usageDate: string;
-    mealType?: MealType | null;
-  }) => {
-    const ing = ingredients.find((i) => i.ingredient_id === ingredientId);
-    if (!ing) {
-      showToast('Ingredient not found', true);
-      return false;
-    }
-
-    const deductQty = -Math.abs(quantity);
-    const itemCost = Math.round(Math.abs(quantity) * ing.current_price * 100) / 100;
-    const newStock = Math.max(0, Math.round((ing.current_stock - Math.abs(quantity)) * 100) / 100);
-
-    const newTxn: StockTransaction = {
-      id: `txn-${Date.now()}`,
-      ingredient_id: ingredientId,
-      txn_type: 'usage',
-      quantity: deductQty,
-      total_cost: itemCost,
-      usage_date: usageDate,
-      meal_type: mealType || null,
-      vendor: null,
-      reason: mealType ? `${mealType.toUpperCase()} meal preparation` : 'Kitchen consumption',
-      created_at: new Date().toISOString(),
-      created_by: profile?.id || 'usr-anon',
-      created_by_name: profile?.name || 'Staff',
-      ingredients: {
-        name: ing.name,
-        category: ing.category,
-        unit: ing.unit,
-      },
-    };
-
-    // Optimistic state updates
+    // Optimistic UI updates
     setIngredients((prev) =>
       prev.map((item) =>
-        item.ingredient_id === ingredientId ? { ...item, current_stock: newStock } : item
+        updatedIngsMap.has(item.ingredient_id)
+          ? updatedIngsMap.get(item.ingredient_id)
+          : item
       )
     );
-    setTransactions((prev) => [newTxn, ...prev]);
-
-    // Recalculate daily summary
-    const existingSummary = dailySummaries[usageDate] || {
-      usage_date: usageDate,
-      total_expenditure: 0,
-      student_count: null,
-      guest_count: null,
-      total_people: null,
-      cost_per_head: null,
-    };
-    const updatedTotalExp = Math.round((existingSummary.total_expenditure + itemCost) * 100) / 100;
-    const totalPpl = existingSummary.total_people;
-    const newCostPerHead =
-      totalPpl && totalPpl > 0 ? Math.round((updatedTotalExp / totalPpl) * 100) / 100 : null;
-
-    setDailySummaries((prev) => ({
-      ...prev,
-      [usageDate]: {
-        ...existingSummary,
-        total_expenditure: updatedTotalExp,
-        cost_per_head: newCostPerHead,
-      },
-    }));
+    setTransactions((prev) => [...newTxns, ...prev]);
 
     // Send write directly to Supabase
     try {
       const client = getSupabase();
+      
+      const { error: txnErr } = await client.from('stock_transactions').insert(payloads); 
+      if (txnErr) throw txnErr;
+
+      // Update stock & unit price on ingredients table (safely handle schema variations)
+      for (const item of items) {
+         const { ingredientId } = item;
+         const updated = updatedIngsMap.get(ingredientId);
+         try {
+           await client
+             .from('ingredients')
+             .update({ current_stock: updated.current_stock, current_price: updated.current_price })
+             .eq('id', ingredientId);
+         } catch {
+           try {
+             await client
+               .from('ingredients')
+               .update({ current_price: updated.current_price })
+               .eq('id', ingredientId);
+           } catch {}
+         }
+      }
+
+      // Record Audit Logs
+      for (const log of auditLogsToAdd) {
+         await safeInsertAuditLog(log);
+      }
+      
+      showToast('Purchases logged successfully.');
+      return true;
+    } catch (e: any) {
+      console.error(e);
+      showToast(e.message || 'Error recording purchases.', true);
+      refreshDataFromSupabase();
+      return false;
+    }
+  };
+  // 2. Log Meal Usage
+  const logUsageBatch = async ({
+    items,
+    usageDate,
+    mealType,
+  }: {
+    items: { ingredientId: string; quantity: number }[];
+    usageDate: string;
+    mealType?: 'breakfast' | 'lunch' | 'dinner' | '';
+  }) => {
+    if (items.length === 0) return false;
+
+    const newTxns: StockTransaction[] = [];
+    const updatedIngsMap = new Map();
+    const payloads: any[] = [];
+    const auditLogsToAdd: any[] = [];
+    
+    let now = Date.now();
+    let totalDeductionCost = 0;
+
+    for (const item of items) {
+      const { ingredientId, quantity } = item;
+      const ing = ingredients.find((i) => i.ingredient_id === ingredientId) || updatedIngsMap.get(ingredientId);
+      if (!ing) {
+        showToast('Ingredient not found', true);
+        return false;
+      }
+
+      const itemCost = Math.round(quantity * ing.current_price * 100) / 100;
+      totalDeductionCost += itemCost;
+      const newStock = Math.max(0, Math.round((ing.current_stock - quantity) * 100) / 100);
+
+      updatedIngsMap.set(ingredientId, { ...ing, current_stock: newStock });
+      
+      const itemMeal = ing.category === 'perishable' ? null : (mealType || null);
+
+      const newTxn: StockTransaction = {
+        id: `txn-${now++}`,
+        ingredient_id: ingredientId,
+        txn_type: 'usage',
+        quantity: -Math.abs(quantity),
+        total_cost: itemCost,
+        usage_date: usageDate,
+        vendor: null,
+        meal_type: itemMeal,
+        reason: null,
+        created_at: new Date().toISOString(),
+        created_by: profile?.id || 'usr-anon',
+        created_by_name: profile?.name || 'Staff',
+        ingredients: {
+          name: ing.name,
+          category: ing.category,
+          unit: ing.unit,
+        },
+      };
+      newTxns.push(newTxn);
+
       const txnPayload: any = {
         ingredient_id: ingredientId,
         txn_type: 'usage',
-        quantity: deductQty,
+        quantity: -Math.abs(quantity),
         total_cost: itemCost,
         usage_date: usageDate,
-        meal_type: mealType || null,
-        reason: mealType ? `${mealType.toUpperCase()} meal preparation` : 'Daily kitchen consumption',
+        meal_type: itemMeal,
       };
       if (isValidUuid(profile?.id)) {
         txnPayload.created_by = profile.id;
       }
-      await client.from('stock_transactions').insert(txnPayload);
+      payloads.push(txnPayload);
 
-      // Deduct from ingredients table if column exists
-      try {
-        await client
-          .from('ingredients')
-          .update({ current_stock: newStock })
-          .eq('id', ingredientId);
-      } catch {}
-
-      // Upsert daily summary
-      await safeUpsertDailySummary({
-        usage_date: usageDate,
-        total_expenditure: updatedTotalExp,
-        student_count: existingSummary.student_count,
-        guest_count: existingSummary.guest_count,
-        total_people: totalPpl,
-        cost_per_head: newCostPerHead,
-      });
-
-      // Audit Log
-      await safeInsertAuditLog({
+      auditLogsToAdd.push({
         user_id: isValidUuid(profile?.id) ? profile.id : null,
         user_name: profile?.name || 'Staff',
         action: 'LOG_USAGE',
         entity_name: 'stock_transactions',
-        reason: `Deducted ${Math.abs(quantity)} ${ing.unit} ${ing.name} for ${mealType ? mealType.toUpperCase() : 'kitchen'} (₹${itemCost.toLocaleString('en-IN')})`,
+        reason: `Deducted ${Math.abs(quantity)} ${ing.unit} ${ing.name} for ${itemMeal ? itemMeal.toUpperCase() : 'kitchen'} (₹${itemCost.toLocaleString('en-IN')})`,
       });
-    } catch (dbErr) {
-      console.warn('Database write error; persisted in local cache:', dbErr);
     }
 
-    showToast(`Usage logged: -${Math.abs(quantity)} ${ing.unit} ${ing.name}`);
-    return true;
+    setIngredients((prev) =>
+      prev.map((item) =>
+        updatedIngsMap.has(item.ingredient_id)
+          ? updatedIngsMap.get(item.ingredient_id)
+          : item
+      )
+    );
+    setTransactions((prev) => [...newTxns, ...prev]);
+
+    try {
+      const client = getSupabase();
+      
+      const { error: txnErr } = await client.from('stock_transactions').insert(payloads); 
+      if (txnErr) throw txnErr;
+
+      for (const item of items) {
+         const { ingredientId } = item;
+         const updated = updatedIngsMap.get(ingredientId);
+         try {
+           await client
+             .from('ingredients')
+             .update({ current_stock: updated.current_stock })
+             .eq('id', ingredientId);
+         } catch {}
+      }
+
+      
+      const existing = dailySummaries[usageDate] || {
+        usage_date: usageDate,
+        total_expenditure: 0,
+        student_count: null,
+        guest_count: null,
+        total_people: null,
+        cost_per_head: null,
+      };
+      
+      const newTotal = existing.total_expenditure + totalDeductionCost;
+      const totalPeople = existing.total_people;
+      const costPerHead = totalPeople && totalPeople > 0 ? newTotal / totalPeople : null;
+
+      setDailySummaries((prev) => ({
+        ...prev,
+        [usageDate]: { ...existing, total_expenditure: newTotal, cost_per_head: costPerHead },
+      }));
+
+      await safeUpsertDailySummary({
+        usage_date: usageDate,
+        total_expenditure: newTotal,
+        student_count: existing.student_count,
+        guest_count: existing.guest_count,
+        total_people: totalPeople,
+        cost_per_head: costPerHead,
+      });
+
+
+      for (const log of auditLogsToAdd) {
+         await safeInsertAuditLog(log);
+      }
+      
+      showToast('Usages logged successfully.');
+      return true;
+    } catch (e: any) {
+      console.error(e);
+      showToast(e.message || 'Error recording usage.', true);
+      refreshDataFromSupabase();
+      return false;
+    }
   };
 
   // 3. Stock Adjustment
@@ -1257,7 +1352,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (isValidUuid(profile?.id)) {
         txnPayload.created_by = profile.id;
       }
-      await client.from('stock_transactions').insert(txnPayload);
+      const { error: txnErr } = await client.from('stock_transactions').insert(txnPayload); if (txnErr) throw txnErr;
 
       try {
         await client
@@ -1279,6 +1374,103 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
 
     showToast(`Stock adjusted: ${ing.name} is now ${newStock} ${ing.unit}`);
+    return true;
+  };
+
+  const requestStockAdjustment = async (data: {
+    ingredientId: string;
+    quantityChange: number;
+    newStock: number;
+    reason: string;
+    remarks: string;
+  }) => {
+    const ing = ingredients.find((i) => i.ingredient_id === data.ingredientId);
+    if (!ing) {
+      showToast('Ingredient not found', true);
+      return false;
+    }
+
+    const reqId = `req-${Date.now()}`;
+    const payload = JSON.stringify({
+      reqId,
+      ingredientId: data.ingredientId,
+      quantityChange: data.quantityChange,
+      newStock: data.newStock,
+      reason: data.reason,
+      remarks: data.remarks,
+    });
+
+    try {
+      const client = getSupabase();
+      const txnPayload: any = {
+        ingredient_id: data.ingredientId,
+        txn_type: 'adjustment',
+        quantity: 0,
+        total_cost: 0,
+        reason: `ADJ_REQ:${payload}`,
+      };
+      if (isValidUuid(profile?.id)) {
+        txnPayload.created_by = profile.id;
+      }
+      
+      // Optimistic local update so UI reflects immediately before server sync
+      setTransactions((prev) => [{
+        id: `temp-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        ...txnPayload,
+        profiles: { name: profile?.name || 'Staff' }
+      }, ...prev]);
+
+      const { error: txnErr } = await client.from('stock_transactions').insert(txnPayload); if (txnErr) throw txnErr;
+    } catch (e) {
+      showToast("Transaction DB error: " + (e.message || JSON.stringify(e)), true);
+      refreshDataFromSupabase();
+    }
+
+    showToast(`Stock adjustment request submitted to Hostel Incharge for ${ing.name}`);
+    return true;
+  };
+
+  const resolveStockAdjustment = async (reqId: string, status: 'approved' | 'denied', payload: any) => {
+    const payloadStr = JSON.stringify({ reqId, status });
+    try {
+      const client = getSupabase();
+      const txnPayload: any = {
+        ingredient_id: payload.ingredientId,
+        txn_type: 'adjustment',
+        quantity: 0,
+        total_cost: 0,
+        reason: `ADJ_RES:${payloadStr}`,
+      };
+      if (isValidUuid(profile?.id)) {
+        txnPayload.created_by = profile.id;
+      }
+      
+      setTransactions((prev) => [{
+        id: `temp-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        ...txnPayload,
+        profiles: { name: profile?.name || 'Staff' }
+      }, ...prev]);
+
+      const { error: txnErr } = await client.from('stock_transactions').insert(txnPayload); if (txnErr) throw txnErr;
+    } catch (e) {
+      showToast("Approval DB error: " + (e.message || JSON.stringify(e)), true);
+      refreshDataFromSupabase();
+    }
+
+    if (status === 'approved') {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const fullReason = payload.remarks ? `${payload.reason} - ${payload.remarks}` : payload.reason;
+      await stockAdjustment({
+        ingredientId: payload.ingredientId,
+        quantityChange: payload.quantityChange,
+        usageDate: todayStr,
+        reason: `[Approved Request] ${fullReason}`,
+      });
+    } else {
+      showToast('Stock adjustment request denied.');
+    }
     return true;
   };
 
@@ -1552,7 +1744,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         newUserId = String(dbProf.id);
       }
 
-      await supabase.from('audit_logs').insert({
+      await safeInsertAuditLog({
         user_id: isValidUuid(profile?.id) ? profile.id : null,
         user_name: profile?.name || 'Admin',
         action: 'CREATE_COORDINATOR',
@@ -1593,7 +1785,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await supabase.from('profiles').update({ active: false }).eq('id', id);
 
-      await supabase.from('audit_logs').insert({
+      await safeInsertAuditLog({
         user_id: isValidUuid(profile?.id) ? profile.id : null,
         user_name: profile?.name || 'Admin',
         action: 'DEACTIVATE_COORDINATOR',
@@ -1649,11 +1841,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         newAsgnId = String(dbAsgn.id);
       } else if (asgnErr) {
         console.error('Failed to insert assignment to Supabase:', asgnErr);
-        showToast('Database error: failed to save assignment', 'error');
+        showToast('Database error: failed to save assignment', true);
         // Do not return true if we truly care about persistence, but we'll allow local fallback for now
       }
 
-      await supabase.from('audit_logs').insert({
+      await safeInsertAuditLog({
         user_id: isValidUuid(profile?.id) ? profile.id : null,
         user_name: profile?.name || 'Admin',
         action: 'ASSIGN_DUTY',
@@ -1704,9 +1896,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         loginWithSupabase,
         signOut,
         switchDemoProfile,
-        logPurchase,
-        logUsage,
+        logPurchaseBatch,
+        logUsageBatch,
         stockAdjustment,
+        requestStockAdjustment,
+        resolveStockAdjustment,
+        pendingAdjustmentRequests,
         addIngredient,
         toggleIngredientActive,
         setStudentHeadcount,

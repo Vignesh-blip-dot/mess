@@ -18,13 +18,13 @@ export function ToastNotification() {
             className={`pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-sm shadow-2xl text-xs font-medium border max-w-sm ${
               toast.isError
                 ? 'bg-[#942426] text-white border-[#7e1c1f]'
-                : 'bg-[#131715] text-[#f7f9f7] border-[#27312c]'
+                : 'bg-[#193d2c] text-white border-[#112a1f]'
             }`}
           >
             {toast.isError ? (
               <AlertCircle size={16} className="shrink-0 text-white" />
             ) : (
-              <CheckCircle size={16} className="shrink-0 text-[#3d8b63]" />
+              <CheckCircle size={16} className="shrink-0 text-[#a3d8be]" />
             )}
             <span className="flex-1 leading-snug">{toast.message}</span>
             <button

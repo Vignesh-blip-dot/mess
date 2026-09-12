@@ -39,6 +39,7 @@ const ALL_NAV_ITEMS: NavItemDef[] = [
   { id: 'log-purchase', label: 'Log a Purchase', icon: PlusCircle, roles: ['admin', 'coordinator'], needs: 'stock' },
   { id: 'log-usage', label: 'Log Meal Usage', icon: MinusCircle, roles: ['admin', 'coordinator'], needs: 'stock' },
   { id: 'adjustment', label: 'Stock Adjustment', icon: Sliders, roles: ['admin', 'coordinator'], needs: 'stock' },
+  { id: 'adjustment-requests', label: 'Adjustment Requests', icon: ShieldCheck, roles: ['admin', 'incharge', 'coordinator'] },
   { id: 'add-ingredient', label: 'Add Ingredient', icon: Plus, roles: ['admin', 'coordinator'], needs: 'full' },
   { id: 'daily-usage', label: 'Daily Stock Usage', icon: CalendarDays, roles: ['admin', 'incharge', 'coordinator'] },
   { id: 'headcount', label: 'Daily Headcount', icon: Users, roles: ['admin', 'incharge', 'coordinator'] },
@@ -63,6 +64,7 @@ export function Navigation() {
     credentialSource,
     refreshDataFromSupabase,
     showToast,
+    pendingAdjustmentRequests,
   } = useApp();
 
   const [isDrawerOpen, setDrawerOpen] = useState(false);
@@ -78,9 +80,9 @@ export function Navigation() {
     setIsSyncing(true);
     try {
       await refreshDataFromSupabase();
-      showToast('Data synced successfully', 'success');
+      showToast('Data synced successfully');
     } catch (error) {
-      showToast('Failed to sync data', 'error');
+      showToast('Failed to sync data', true);
     } finally {
       setIsSyncing(false);
     }
@@ -92,6 +94,11 @@ export function Navigation() {
     if (item.needs === 'stock' && profile.role === 'coordinator' && !hasStockEditAccess) return false;
     if (item.needs === 'full' && profile.role === 'coordinator' && !hasFullEditAccess) return false;
     return true;
+  }).map(item => {
+    if (item.id === 'adjustment-requests') {
+      return { ...item, badge: String(pendingAdjustmentRequests?.length || 0) };
+    }
+    return item;
   });
 
   const formattedDate = currentTime.toLocaleDateString('en-IN', {
@@ -151,20 +158,27 @@ export function Navigation() {
                     : 'text-[#131715] hover:bg-[#193d2c]/5 active:bg-[#e5e0d5]/50'
                 }`}
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <Icon
-                    size={16}
-                    className={isActive ? 'text-[#f7f9f7]' : 'text-[#59635e] group-hover:text-[#131715]'}
-                  />
-                  <span className="truncate">{item.label}</span>
+                <div className="flex items-center justify-between w-full min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Icon
+                      size={16}
+                      className={isActive ? 'text-[#f7f9f7]' : 'text-[#59635e] group-hover:text-[#131715]'}
+                    />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-bold ${isActive ? 'bg-[#f7f9f7] text-[#193d2c]' : 'bg-[#942426] text-white'}`}>
+                      {item.badge}
+                    </span>
+                  )}
+                  {isActive && !item.badge && (
+                    <motion.div
+                      layoutId="active-pill-dot"
+                      className="w-1.5 h-1.5 rounded-full bg-[#f7f9f7]"
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    />
+                  )}
                 </div>
-                {isActive && (
-                  <motion.div
-                    layoutId="active-pill-dot"
-                    className="w-1.5 h-1.5 rounded-full bg-[#f7f9f7]"
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  />
-                )}
               </button>
             );
           })}
@@ -418,8 +432,17 @@ export function Navigation() {
                           : 'text-[#131715] active:bg-[#f5f2eb]'
                       }`}
                     >
-                      <Icon size={18} className={isActive ? 'text-[#f7f9f7]' : 'text-[#59635e]'} />
-                      <span>{item.label}</span>
+                      <div className="flex items-center justify-between w-full min-w-0">
+                        <div className="flex items-center gap-3">
+                          <Icon size={18} className={isActive ? 'text-[#f7f9f7]' : 'text-[#59635e]'} />
+                          <span>{item.label}</span>
+                        </div>
+                        {item.badge && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-sm font-bold ${isActive ? 'bg-[#f7f9f7] text-[#193d2c]' : 'bg-[#942426] text-white'}`}>
+                            {item.badge}
+                          </span>
+                        )}
+                      </div>
                     </button>
                   );
                 })}

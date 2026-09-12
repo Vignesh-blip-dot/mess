@@ -1,0 +1,3 @@
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.example' }); // using .env but we don't have it here...

@@ -51,8 +51,10 @@ export function DashboardView() {
     cost_per_head: null,
   };
 
-  // Recent 15 entries
-  const recentEntries = transactions.slice(0, 15);
+  // Recent 15 entries, excluding hidden tracking markers
+  const recentEntries = transactions
+    .filter(t => !(t.reason?.startsWith('ADJ_REQ:') || t.reason?.startsWith('ADJ_RES:')))
+    .slice(0, 15);
 
   const formatCurrency = (n: number | null | undefined) => {
     if (n === null || n === undefined) return '—';

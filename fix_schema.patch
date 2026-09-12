@@ -1,0 +1,19 @@
+--- supabase_schema.sql
++++ supabase_schema.sql
+@@ -109,7 +109,7 @@
+     if v_role = 'admin' then
+         return 'edit';
+     elsif v_role = 'incharge' then
+-        return 'edit';
++        return 'view';
+     end if;
+ 
+     -- Check if actively on duty
+@@ -137,7 +137,7 @@
+         return 'grace';
+     end if;
+ 
+-    return 'view';
++    return 'view';
+ end;
+ $$;
