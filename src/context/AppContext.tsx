@@ -115,12 +115,12 @@ function isValidUuid(id?: string | null): boolean {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(() => {
-    const saved = localStorage.getItem('mess_profile');
+    const saved = sessionStorage.getItem('mess_profile');
     return saved ? JSON.parse(saved) : null;
   });
 
   const [accessLevel, setAccessLevel] = useState<CoordinatorAccessLevel>(() => {
-    const saved = localStorage.getItem('mess_access_level');
+    const saved = sessionStorage.getItem('mess_access_level');
     return (saved as CoordinatorAccessLevel) || 'none';
   });
 
@@ -185,12 +185,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Local storage synchronization
   useEffect(() => {
-    if (profile) localStorage.setItem('mess_profile', JSON.stringify(profile));
-    else localStorage.removeItem('mess_profile');
+    if (profile) sessionStorage.setItem('mess_profile', JSON.stringify(profile));
+    else sessionStorage.removeItem('mess_profile');
   }, [profile]);
 
   useEffect(() => {
-    localStorage.setItem('mess_access_level', accessLevel);
+    sessionStorage.setItem('mess_access_level', accessLevel);
   }, [accessLevel]);
 
   useEffect(() => {
@@ -383,7 +383,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       // 2. Fetch Stock Transactions
       const { data: txnsData, error: txnsErr } = await client
         .from('stock_transactions')
-        .select('*')
+        .select('*, profiles(name)')
         .order('created_at', { ascending: false })
         .limit(300);
 
@@ -406,7 +406,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             reason: row.reason || null,
             created_at: row.created_at,
             created_by: row.created_by || 'system',
-            created_by_name: 'Staff',
+            created_by_name: row.profiles?.name || 'Staff User',
             ingredients: matchedIng
               ? {
                   name: matchedIng.name,
@@ -540,7 +540,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       let auditRows: any[] | null = null;
       const { data: aud1, error: aErr1 } = await client
         .from('audit_log')
-        .select('*')
+        .select('*, profiles(name)')
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -551,7 +551,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       } else {
         const { data: aud2, error: aErr2 } = await client
           .from('audit_logs')
-          .select('*')
+          .select('*, profiles(name)')
           .order('created_at', { ascending: false })
           .limit(100);
         if (!aErr2 && aud2) {
@@ -567,11 +567,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             id: String(row.id),
             created_at: row.created_at,
             user_id: row.user_id || 'system',
-            user_name: row.user_name || 'Staff',
+            user_name: row.profiles?.name || row.user_name || 'Staff User',
             action: row.action,
             entity_name: row.entity_name,
             highlight_reason: row.highlight_reason,
             reason: row.reason,
+            profiles: row.profiles,
           }))
         );
       }
@@ -723,10 +724,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       setProfile(activeProfile);
-      localStorage.setItem('mess_profile', JSON.stringify(activeProfile));
+      sessionStorage.setItem('mess_profile', JSON.stringify(activeProfile));
       const level = await calculateAccessLevel(activeProfile.id, activeProfile.role, assignments);
       setAccessLevel(level);
-      localStorage.setItem('mess_access_level', level);
+      sessionStorage.setItem('mess_access_level', level);
 
       showToast(`Signed in successfully as ${activeProfile.name}.`);
       await refreshDataFromSupabase();
@@ -779,10 +780,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       setProfile(newProfile);
-      localStorage.setItem('mess_profile', JSON.stringify(newProfile));
+      sessionStorage.setItem('mess_profile', JSON.stringify(newProfile));
       const level = await calculateAccessLevel(newProfile.id, newProfile.role, assignments);
       setAccessLevel(level);
-      localStorage.setItem('mess_access_level', level);
+      sessionStorage.setItem('mess_access_level', level);
 
       showToast(`Account created. Signed in as ${newProfile.name}.`);
       await refreshDataFromSupabase();
@@ -922,8 +923,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // ignore
     }
-    localStorage.removeItem('mess_profile');
-    localStorage.removeItem('mess_access_level');
+    sessionStorage.removeItem('mess_profile');
+    sessionStorage.removeItem('mess_access_level');
     setProfile(null);
     setAccessLevel('none');
     showToast('Signed out of register.');

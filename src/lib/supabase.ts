@@ -48,7 +48,12 @@ export function getActiveCredentials(): {
 
 let activeClient: SupabaseClient = createClient(
   getActiveCredentials().url,
-  getActiveCredentials().key
+  getActiveCredentials().key,
+  {
+    auth: {
+      storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+    }
+  }
 );
 
 export function getSupabase(): SupabaseClient {
@@ -71,7 +76,11 @@ export function updateSupabaseCredentials(url: string, key: string): SupabaseCli
     localStorage.setItem('mess_custom_supabase_key', cleanKey);
   }
 
-  activeClient = createClient(cleanUrl, cleanKey);
+  activeClient = createClient(cleanUrl, cleanKey, {
+    auth: {
+      storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+    }
+  });
   return activeClient;
 }
 
@@ -82,7 +91,11 @@ export function resetSupabaseCredentials(): SupabaseClient {
   }
 
   const creds = getActiveCredentials();
-  activeClient = createClient(creds.url, creds.key);
+  activeClient = createClient(creds.url, creds.key, {
+    auth: {
+      storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+    }
+  });
   return activeClient;
 }
 

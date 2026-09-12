@@ -19,6 +19,7 @@ import {
   Clock,
   BookOpen,
   Database,
+  RefreshCw,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { PageId } from '../types';
@@ -60,15 +61,30 @@ export function Navigation() {
     setQuickActionOpen,
     setDatabaseModalOpen,
     credentialSource,
+    refreshDataFromSupabase,
+    showToast,
   } = useApp();
 
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      await refreshDataFromSupabase();
+      showToast('Data synced successfully', 'success');
+    } catch (error) {
+      showToast('Failed to sync data', 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const visibleNav = ALL_NAV_ITEMS.filter((item) => {
     if (!profile) return item.id === 'dashboard' || item.id === 'ingredients';
@@ -194,6 +210,16 @@ export function Navigation() {
               </span>
             </button>
           )}
+
+          <button
+            onClick={handleSync}
+            disabled={isSyncing}
+            className="w-full mb-2 px-2 py-1.5 text-xs font-medium bg-[#f5f2eb] border border-[#e5e0d5] hover:bg-[#e6f0ea] text-[#193d2c] rounded-sm flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+            title="Sync data with database"
+          >
+            <RefreshCw size={13} className={isSyncing ? 'animate-spin' : ''} />
+            <span>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
+          </button>
 
           <button
             id="signout-desktop-btn"
@@ -431,6 +457,14 @@ export function Navigation() {
                     </span>
                   </button>
                 )}
+                <button
+                  onClick={handleSync}
+                  disabled={isSyncing}
+                  className="w-full mb-2 px-2 py-2 text-xs font-medium bg-[#f5f2eb] border border-[#e5e0d5] hover:bg-[#e6f0ea] text-[#193d2c] rounded flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw size={13} className={isSyncing ? 'animate-spin' : ''} />
+                  <span>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
+                </button>
                 <button
                   onClick={() => {
                     setDrawerOpen(false);

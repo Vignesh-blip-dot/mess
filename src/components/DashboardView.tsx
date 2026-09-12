@@ -316,6 +316,7 @@ export function DashboardView() {
                 <tr className="border-b-2 border-[#131715] text-[11px] font-bold uppercase tracking-wider text-[#59635e]">
                   <th className="py-2.5 px-3">Date</th>
                   <th className="py-2.5 px-3">Ingredient</th>
+                  <th className="py-2.5 px-3">By</th>
                   <th className="py-2.5 px-3">Type</th>
                   <th className="py-2.5 px-3 text-right">Quantity</th>
                   <th className="py-2.5 px-3 text-right">Total Cost</th>
@@ -343,6 +344,9 @@ export function DashboardView() {
                       </td>
                       <td className="py-2.5 px-3 font-sans font-medium whitespace-nowrap">
                         {t.ingredients?.name || 'Unknown'}
+                      </td>
+                      <td className="py-2.5 px-3 whitespace-nowrap text-[12px] text-[#59635e]">
+                        {t.created_by_name || 'Staff User'}
                       </td>
                       <td className="py-2.5 px-3 whitespace-nowrap">
                         {isAdj && <span className="ledger-stamp">Adjusted</span>}
