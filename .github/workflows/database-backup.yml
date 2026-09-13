@@ -22,7 +22,19 @@ jobs:
             --format=custom \
             --file=/backup/backup.dump
 
-      - name: Upload backup artifact
+      - name: Check backup file
+        run: |
+          ls -lh backup.dump
+
+      - name: Upload backup to Google Drive
+        uses: willo32/google-drive-upload-action@v1
+        with:
+          target: backup.dump
+          credentials: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}
+          parent_folder_id: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+          name: supabase-backup-${{ github.run_number }}.dump
+
+      - name: Upload backup to GitHub temporarily
         uses: actions/upload-artifact@v4
         with:
           name: supabase-backup-${{ github.run_number }}
