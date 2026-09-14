@@ -10,31 +10,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl ca-certificates gnupg
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+
+      - name: Verify pg_dump version
+        run: pg_dump --version
+
       - name: Create database backup
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          docker run --rm \
-            -e DATABASE_URL="$DATABASE_URL" \
-            -v "$PWD:/backup" \
-            postgres:17 \
-            pg_dump "$DATABASE_URL" \
+          pg_dump "$DATABASE_URL" \
             --format=custom \
-            --file=/backup/backup.dump
+            --file=backup.dump
 
-      - name: Check backup file
-        run: |
-          ls -lh backup.dump
-
-      - name: Upload backup to Google Drive
-        uses: willo32/google-drive-upload-action@v1
-        with:
-          target: backup.dump
-          credentials: ${{ secrets.GOOGLE_DRIVE_CREDENTIALS }}
-          parent_folder_id: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
-          name: supabase-backup-${{ github.run_number }}.dump
-
-      - name: Upload backup to GitHub temporarily
+      - name: Upload backup artifact
         uses: actions/upload-artifact@v4
         with:
           name: supabase-backup-${{ github.run_number }}
