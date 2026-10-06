@@ -132,7 +132,7 @@ export function SignInPage() {
                 id="signin-submit-btn"
                 type="submit"
                 disabled={isSubmitting || isLoading}
-                className="w-full mt-2 py-2.5 px-4 bg-[#193d2c] hover:bg-[#122e21] text-white text-sm font-semibold rounded-sm shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                className="w-full mt-2 py-2.5 px-4 bg-[#193d2c] hover:bg-[#112a1f] text-white text-sm font-semibold rounded-sm shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
               >
                 {isSubmitting ? (
                   <span>Signing in...</span>

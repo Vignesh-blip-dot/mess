@@ -25,14 +25,15 @@ export function IngredientsView() {
     profile,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'all' | 'provisions' | 'perishable' | 'zero'>('all');
+  const [activeTab, setActiveTab] = useState<'provisions' | 'perishable' >('provisions');
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'name' | 'stock' | 'value'>('name');
+  const [sortBy, setSortBy] = useState<'name' | 'telugu' | 'stock' | 'value'>('name');
   const [sortAsc, setSortAsc] = useState(true);
 
   const filtered = ingredients.filter((item) => {
     if (activeTab === 'provisions' && item.category !== 'provisions') return false;
     if (activeTab === 'perishable' && item.category !== 'perishable') return false;
+    
     if (activeTab === 'zero' && (!item.active || item.current_stock > 0)) return false;
 
     if (!searchTerm.trim()) return true;
@@ -46,6 +47,8 @@ export function IngredientsView() {
     let comp = 0;
     if (sortBy === 'name') {
       comp = a.name.localeCompare(b.name);
+    } else if (sortBy === 'telugu') {
+      comp = (a.name_telugu || '').localeCompare(b.name_telugu || '');
     } else if (sortBy === 'stock') {
       comp = a.current_stock - b.current_stock;
     } else if (sortBy === 'value') {
@@ -54,7 +57,7 @@ export function IngredientsView() {
     return sortAsc ? comp : -comp;
   });
 
-  const toggleSort = (field: 'name' | 'stock' | 'value') => {
+  const toggleSort = (field: 'name' | 'telugu' | 'stock' | 'value') => {
     if (sortBy === field) {
       setSortAsc(!sortAsc);
     } else {
@@ -69,6 +72,7 @@ export function IngredientsView() {
 
   const provisionsCount = ingredients.filter((i) => i.category === 'provisions').length;
   const perishablesCount = ingredients.filter((i) => i.category === 'perishable').length;
+  
   const zeroStockCount = ingredients.filter((i) => i.active && i.current_stock <= 0).length;
 
   return (
@@ -97,7 +101,7 @@ export function IngredientsView() {
           <button
             id="add-ingredient-top-btn"
             onClick={() => navigateTo('add-ingredient')}
-            className="px-3.5 py-2 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#122e21] transition-all shadow-xs flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+            className="px-3.5 py-2 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#112a1f] transition-all shadow-xs flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
           >
             <Plus size={15} />
             <span>Add New Ingredient</span>
@@ -115,7 +119,7 @@ export function IngredientsView() {
               className={`px-3 py-1.5 rounded-sm text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 activeTab === 'all'
                   ? 'bg-[#193d2c] text-[#f7f9f7]'
-                  : 'bg-white border border-[#e5e0d5] text-[#131715] hover:bg-[#f5f2eb]'
+                  : 'bg-white border border-[#e5e0d5] text-[#131715] hover:bg-[#f4f7f5]'
               }`}
             >
               All ({ingredients.length})
@@ -125,7 +129,7 @@ export function IngredientsView() {
               className={`px-3 py-1.5 rounded-sm text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 activeTab === 'provisions'
                   ? 'bg-[#193d2c] text-[#f7f9f7]'
-                  : 'bg-white border border-[#e5e0d5] text-[#131715] hover:bg-[#f5f2eb]'
+                  : 'bg-white border border-[#e5e0d5] text-[#131715] hover:bg-[#f4f7f5]'
               }`}
             >
               Provisions ({provisionsCount})
@@ -135,11 +139,12 @@ export function IngredientsView() {
               className={`px-3 py-1.5 rounded-sm text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 activeTab === 'perishable'
                   ? 'bg-[#193d2c] text-[#f7f9f7]'
-                  : 'bg-white border border-[#e5e0d5] text-[#131715] hover:bg-[#f5f2eb]'
+                  : 'bg-white border border-[#e5e0d5] text-[#131715] hover:bg-[#f4f7f5]'
               }`}
             >
               Perishables ({perishablesCount})
             </button>
+            
             <button
               onClick={() => setActiveTab('zero')}
               className={`px-3 py-1.5 rounded-sm text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
@@ -181,7 +186,7 @@ export function IngredientsView() {
           </div>
           <button
             onClick={() => setDatabaseModalOpen(true)}
-            className="px-3 py-1.5 bg-[#193d2c] text-[#f7f9f7] rounded-sm font-semibold hover:bg-[#122e21] transition-colors shrink-0 cursor-pointer text-xs"
+            className="px-3 py-1.5 bg-[#193d2c] text-[#f7f9f7] rounded-sm font-semibold hover:bg-[#112a1f] transition-colors shrink-0 cursor-pointer text-xs"
           >
             Connect My Supabase
           </button>
@@ -201,7 +206,7 @@ export function IngredientsView() {
             <p className="text-xs text-[#59635e] max-w-md mx-auto">
               {profile?.role === 'admin' ? (
                 <>
-                  Your database was reached, but no rows were returned from the <code className="font-mono bg-[#f5f2eb] px-1 py-0.5 rounded text-[#131715]">ingredients</code> table. This happens if the table is empty or if Row Level Security (RLS) policies are blocking anon reads.
+                  Your database was reached, but no rows were returned from the <code className="font-mono bg-[#f4f7f5] border border-[#e5e0d5] px-1 py-0.5 rounded text-[#131715]">ingredients</code> table. This happens if the table is empty or if Row Level Security (RLS) policies are blocking anon reads.
                 </>
               ) : (
                 'There are currently no items registered in the inventory ledger. Please contact the Mess Administrator to add provisions.'
@@ -211,7 +216,7 @@ export function IngredientsView() {
               <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                 <button
                   onClick={() => setDatabaseModalOpen(true)}
-                  className="px-3.5 py-2 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#122e21] transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                  className="px-3.5 py-2 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#112a1f] transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
                 >
                   <Database size={13} />
                   <span>Open Database Diagnostics &amp; Seed Data</span>
@@ -234,6 +239,15 @@ export function IngredientsView() {
                   >
                     <div className="flex items-center gap-1">
                       <span>Ingredient</span>
+                      <ArrowUpDown size={11} />
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => toggleSort('telugu')}
+                    className="py-2.5 px-3 cursor-pointer select-none hover:text-[#131715]"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Telugu Name</span>
                       <ArrowUpDown size={11} />
                     </div>
                   </th>
@@ -277,17 +291,21 @@ export function IngredientsView() {
                         <div className="font-semibold text-sm text-[#131715]">
                           {item.name}
                         </div>
-                        {item.name_telugu && (
-                          <div className="text-[11px] text-[#59635e]">
+                      </td>
+                      <td className="py-2.5 px-3 font-sans">
+                        {item.name_telugu ? (
+                          <div className="text-sm font-medium text-[#131715]">
                             {item.name_telugu}
                           </div>
+                        ) : (
+                          <span className="text-xs text-[#8b948f] italic">—</span>
                         )}
                       </td>
                       <td className="py-2.5 px-3 font-sans">
                         <span
                           className={`text-[11px] px-2 py-0.5 rounded-sm capitalize font-medium ${
                             item.category === 'provisions'
-                              ? 'bg-[#f5f2eb] text-[#131715] border border-[#e5e0d5]'
+                              ? 'bg-[#ffffff] text-[#131715] border border-[#e5e0d5]'
                               : 'bg-[#e6f0ea] text-[#193d2c] border border-[#193d2c]/20'
                           }`}
                         >

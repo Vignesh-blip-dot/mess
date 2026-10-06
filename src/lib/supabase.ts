@@ -19,9 +19,18 @@ export function getActiveCredentials(): {
   if (typeof window !== 'undefined') {
     const savedUrl = localStorage.getItem('mess_custom_supabase_url');
     const savedKey = localStorage.getItem('mess_custom_supabase_key');
-    if (savedUrl && savedKey) {
+
+    // Auto-purge known unreachable or malformed URLs
+    if (savedUrl && (savedUrl.includes('fvcbdbcmixifptwmemzr') || !savedUrl.includes('.'))) {
+      localStorage.removeItem('mess_custom_supabase_url');
+      localStorage.removeItem('mess_custom_supabase_key');
+    } else if (savedUrl && savedKey) {
+      let clean = savedUrl.trim().replace(/\/+$/, '');
+      if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+        clean = `https://${clean}`;
+      }
       return {
-        url: savedUrl.trim(),
+        url: clean,
         key: savedKey.trim(),
         source: 'custom',
         isCustom: true,
@@ -29,19 +38,13 @@ export function getActiveCredentials(): {
     }
   }
 
-  if (ENV_SUPABASE_URL && ENV_SUPABASE_ANON_KEY) {
-    return {
-      url: ENV_SUPABASE_URL.trim(),
-      key: ENV_SUPABASE_ANON_KEY.trim(),
-      source: 'env',
-      isCustom: false,
-    };
-  }
+  const effectiveUrl = ENV_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+  const effectiveKey = ENV_SUPABASE_ANON_KEY || FALLBACK_SUPABASE_ANON_KEY;
 
   return {
-    url: FALLBACK_SUPABASE_URL,
-    key: FALLBACK_SUPABASE_ANON_KEY,
-    source: 'fallback',
+    url: effectiveUrl.trim(),
+    key: effectiveKey.trim(),
+    source: ENV_SUPABASE_URL ? 'env' : 'fallback',
     isCustom: false,
   };
 }

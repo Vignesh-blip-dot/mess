@@ -8,7 +8,7 @@ export function AddIngredientView() {
 
   const [name, setName] = useState('');
   const [nameTelugu, setNameTelugu] = useState('');
-  const [category, setCategory] = useState<'provisions' | 'perishable'>('provisions');
+  const [category, setCategory] = useState<import('../types').IngredientCategory>('provisions');
   const [unit, setUnit] = useState('kg');
   const [tracksUsage, setTracksUsage] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -125,12 +125,12 @@ export function AddIngredientView() {
               <select
                 id="ing-cat"
                 value={category}
-                onChange={(e) => setCategory(e.target.value as 'provisions' | 'perishable')}
+                onChange={(e) => setCategory(e.target.value as import('../types').IngredientCategory)}
                 className="w-full px-3 py-2 text-sm bg-white border border-[#e5e0d5] rounded-sm text-[#131715] focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
               >
                 <option value="provisions">Provisions (Stocked)</option>
                 <option value="perishable">Perishable (Daily)</option>
-              </select>
+                </select>
             </div>
 
             {/* Unit */}
@@ -172,7 +172,7 @@ export function AddIngredientView() {
             </div>
           </div>
 
-          <div className="bg-[#f5f2eb] border border-[#e5e0d5] p-3 rounded-sm text-xs text-[#59635e]">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] p-3 rounded-sm text-xs text-[#59635e]">
             <strong className="text-[#131715]">Note on register durability:</strong> New items start with 0.00 shelf stock and 0.00 unit price. When the first purchase is logged, the initial cost and stock balance will be established automatically.
           </div>
 
@@ -180,7 +180,7 @@ export function AddIngredientView() {
             type="submit"
             id="add-ing-submit-btn"
             disabled={isSubmitting}
-            className="w-full py-2.5 px-4 rounded-sm bg-[#193d2c] text-[#f7f9f7] font-semibold text-sm hover:bg-[#122e21] active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+            className="w-full py-2.5 px-4 rounded-sm bg-[#193d2c] text-[#f7f9f7] font-semibold text-sm hover:bg-[#112a1f] active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
           >
             <Plus size={16} />
             <span>{isSubmitting ? 'Registering...' : 'Add Ingredient to Register'}</span>

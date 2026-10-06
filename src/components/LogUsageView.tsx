@@ -270,7 +270,7 @@ export function LogUsageView() {
               type="submit"
               id="usage-submit-btn"
               disabled={isSubmitting || rows.length === 0}
-              className="w-full py-3 px-4 rounded-sm bg-[#193d2c] text-[#f7f9f7] font-semibold text-sm hover:bg-[#122e21] active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+              className="w-full py-3 px-4 rounded-sm bg-[#193d2c] text-[#f7f9f7] font-semibold text-sm hover:bg-[#112a1f] active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               <MinusCircle size={16} />
               <span>{isSubmitting ? 'Recording Deductions...' : 'Save Bulk Usage Entry'}</span>

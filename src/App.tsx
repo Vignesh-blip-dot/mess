@@ -28,6 +28,7 @@ function MainAppShell() {
     return (
       <>
         <SignInPage />
+        <DatabaseStatusModal />
         <ToastNotification />
       </>
     );

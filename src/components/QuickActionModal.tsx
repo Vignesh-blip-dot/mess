@@ -39,7 +39,7 @@ export function QuickActionModal() {
           </div>
           <button
             onClick={() => setQuickActionOpen(false)}
-            className="w-8 h-8 rounded-sm flex items-center justify-center text-[#59635e] hover:text-[#131715] active:bg-[#f5f2eb] cursor-pointer transition-colors"
+            className="w-8 h-8 rounded-sm flex items-center justify-center text-[#59635e] hover:text-[#131715] active:bg-[#ffffff] cursor-pointer transition-colors"
           >
             <X size={18} />
           </button>
@@ -48,7 +48,7 @@ export function QuickActionModal() {
         <div className="grid grid-cols-1 gap-2.5">
           <button
             onClick={() => handleSelect('log-purchase')}
-            className="flex items-center gap-3 p-3 rounded-sm bg-[#fbfaf7] border border-[#e5e0d5] hover:bg-[#f5f2eb] active:scale-[0.99] text-left transition-all cursor-pointer"
+            className="flex items-center gap-3 p-3 rounded-sm bg-[#ffffff] border border-[#e5e0d5] hover:bg-[#ffffff] active:scale-[0.99] text-left transition-all cursor-pointer"
           >
             <div className="w-10 h-10 rounded-full bg-[#e6f0ea] text-[#193d2c] flex items-center justify-center shrink-0">
               <PlusCircle size={20} />
@@ -61,7 +61,7 @@ export function QuickActionModal() {
 
           <button
             onClick={() => handleSelect('log-usage')}
-            className="flex items-center gap-3 p-3 rounded-sm bg-[#fbfaf7] border border-[#e5e0d5] hover:bg-[#f5f2eb] active:scale-[0.99] text-left transition-all cursor-pointer"
+            className="flex items-center gap-3 p-3 rounded-sm bg-[#ffffff] border border-[#e5e0d5] hover:bg-[#ffffff] active:scale-[0.99] text-left transition-all cursor-pointer"
           >
             <div className="w-10 h-10 rounded-full bg-[#faeaea] text-[#942426] flex items-center justify-center shrink-0">
               <MinusCircle size={20} />
@@ -74,9 +74,9 @@ export function QuickActionModal() {
 
           <button
             onClick={() => handleSelect('adjustment')}
-            className="flex items-center gap-3 p-3 rounded-sm bg-[#fbfaf7] border border-[#e5e0d5] hover:bg-[#f5f2eb] active:scale-[0.99] text-left transition-all cursor-pointer"
+            className="flex items-center gap-3 p-3 rounded-sm bg-[#ffffff] border border-[#e5e0d5] hover:bg-[#ffffff] active:scale-[0.99] text-left transition-all cursor-pointer"
           >
-            <div className="w-10 h-10 rounded-full bg-[#f5f2eb] text-[#131715] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-full bg-[#ffffff] text-[#131715] flex items-center justify-center shrink-0">
               <Sliders size={20} />
             </div>
             <div>
@@ -87,7 +87,7 @@ export function QuickActionModal() {
 
           <button
             onClick={() => handleSelect('headcount')}
-            className="flex items-center gap-3 p-3 rounded-sm bg-[#fbfaf7] border border-[#e5e0d5] hover:bg-[#f5f2eb] active:scale-[0.99] text-left transition-all cursor-pointer"
+            className="flex items-center gap-3 p-3 rounded-sm bg-[#ffffff] border border-[#e5e0d5] hover:bg-[#ffffff] active:scale-[0.99] text-left transition-all cursor-pointer"
           >
             <div className="w-10 h-10 rounded-full bg-[#e6f0ea] text-[#193d2c] flex items-center justify-center shrink-0">
               <Users size={20} />
@@ -101,7 +101,7 @@ export function QuickActionModal() {
           {hasFullEditAccess && (
             <button
               onClick={() => handleSelect('add-ingredient')}
-              className="flex items-center gap-3 p-3 rounded-sm bg-[#fbfaf7] border border-[#e5e0d5] hover:bg-[#f5f2eb] active:scale-[0.99] text-left transition-all cursor-pointer"
+              className="flex items-center gap-3 p-3 rounded-sm bg-[#ffffff] border border-[#e5e0d5] hover:bg-[#ffffff] active:scale-[0.99] text-left transition-all cursor-pointer"
             >
               <div className="w-10 h-10 rounded-full bg-[#e6f0ea] text-[#193d2c] flex items-center justify-center shrink-0">
                 <PackagePlus size={20} />

@@ -117,7 +117,6 @@ export function MonthlyReportView() {
 
   const provisionsRows: IngredientMonthLine[] = [];
   const perishableRows: IngredientMonthLine[] = [];
-
   Object.values(perIngredient).forEach((line) => {
     const ing = ingredients.find((i) => i.ingredient_id === line.id);
     line.opening = openingByIngredient[line.id] || 0;
@@ -134,7 +133,7 @@ export function MonthlyReportView() {
   // Calculate high-level summary metrics
   const totalProvisionsCost = provisionsRows.reduce((s, r) => s + r.usedCost, 0);
   const totalPerishablesCost = perishableRows.reduce((s, r) => s + r.usedCost, 0);
-  const totalExpenditure = totalProvisionsCost + totalPerishablesCost;
+  const totalExpenditure = totalProvisionsCost + totalPerishablesCost ;
 
   const totalPersonDays = dailyRows.reduce((s, r) => s + (r.total_people || 0), 0);
   const avgCostPerHead = totalPersonDays > 0 ? totalExpenditure / totalPersonDays : null;
@@ -187,7 +186,7 @@ export function MonthlyReportView() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => window.print()}
-            className="px-3 py-2 text-xs font-semibold rounded-sm bg-white border border-[#e5e0d5] text-[#131715] hover:bg-[#f5f2eb] transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-2 text-xs font-semibold rounded-sm bg-white border border-[#e5e0d5] text-[#131715] hover:bg-[#ffffff] transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
             <Printer size={14} />
             <span>Print / Save PDF</span>
@@ -197,7 +196,7 @@ export function MonthlyReportView() {
               id="finalize-report-btn"
               onClick={handleFinalize}
               className={`px-3 py-2 text-xs font-semibold rounded-sm text-[#f7f9f7] transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer ${
-                isFinalized ? 'bg-[#193d2c] hover:bg-[#122e21]' : 'bg-[#942426] hover:bg-[#7e1c1f]'
+                isFinalized ? 'bg-[#193d2c] hover:bg-[#112a1f]' : 'bg-[#942426] hover:bg-[#942426]'
               }`}
             >
               <Lock size={13} />
@@ -252,28 +251,28 @@ export function MonthlyReportView() {
 
         {/* 5 Big Stat Boxes */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
-          <div className="bg-[#fbfaf7] border border-[#e5e0d5] p-3 rounded-sm">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] p-3 rounded-sm">
             <span className="text-[11px] text-[#59635e] block font-medium mb-1">Provisions Cost</span>
             <span className="font-mono-fig text-lg font-bold text-[#131715] block">
               {formatCurrency(totalProvisionsCost)}
             </span>
           </div>
 
-          <div className="bg-[#fbfaf7] border border-[#e5e0d5] p-3 rounded-sm">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] p-3 rounded-sm">
             <span className="text-[11px] text-[#59635e] block font-medium mb-1">Perishables Cost</span>
             <span className="font-mono-fig text-lg font-bold text-[#131715] block">
               {formatCurrency(totalPerishablesCost)}
             </span>
           </div>
 
-          <div className="bg-[#fbfaf7] border border-[#e5e0d5] p-3 rounded-sm">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] p-3 rounded-sm">
             <span className="text-[11px] text-[#59635e] block font-medium mb-1">Total Ingredients</span>
             <span className="font-mono-fig text-lg font-bold text-[#193d2c] block">
               {formatCurrency(totalExpenditure)}
             </span>
           </div>
 
-          <div className="bg-[#fbfaf7] border border-[#e5e0d5] p-3 rounded-sm">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] p-3 rounded-sm">
             <span className="text-[11px] text-[#59635e] block font-medium mb-1">Person-Days</span>
             <span className="font-mono-fig text-lg font-bold text-[#131715] block">
               {totalPersonDays || '—'}

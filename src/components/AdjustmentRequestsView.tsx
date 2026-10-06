@@ -21,7 +21,7 @@ export function AdjustmentRequestsView() {
     >
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-serif font-bold text-[#131715]">Pending Adjustment Requests</h2>
-        <span className="px-3 py-1 bg-[#f5f2eb] border border-[#e5e0d5] rounded-sm text-xs font-semibold text-[#59635e]">
+        <span className="px-3 py-1 bg-[#ffffff] border border-[#e5e0d5] rounded-sm text-xs font-semibold text-[#59635e]">
           {pendingAdjustmentRequests.length} Pending
         </span>
       </div>
@@ -58,12 +58,12 @@ export function AdjustmentRequestsView() {
                         </button>
                       </>
                     ) : (
-                      <span className="text-xs text-[#59635e] italic bg-[#f5f2eb] px-2 py-1 rounded-sm border border-[#e5e0d5]">Awaiting Approval</span>
+                      <span className="text-xs text-[#59635e] italic bg-[#ffffff] px-2 py-1 rounded-sm border border-[#e5e0d5]">Awaiting Approval</span>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-[#f5f2eb] p-3 rounded-sm text-xs font-mono-fig">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-[#ffffff] p-3 rounded-sm text-xs font-mono-fig">
                   <div>
                     <span className="block text-[#59635e] text-[10px] uppercase">Prev Stock</span>
                     <span className="font-semibold">{req.newStock - req.quantityChange} {ing?.unit}</span>

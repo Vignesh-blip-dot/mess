@@ -121,7 +121,7 @@ export function Navigation() {
         className="hidden lg:flex w-64 flex-col shrink-0 border-r border-[#e5e0d5] bg-[#ffffff] sticky top-0 h-screen z-20 shadow-[1px_0_4px_rgba(19,23,21,0.02)]"
       >
         {/* Brand Header */}
-        <div className="p-5 border-b border-[#e5e0d5] bg-[#fbfaf7]">
+        <div className="p-5 border-b border-[#e5e0d5] bg-[#ffffff]">
           <div className="flex items-center gap-2.5 mb-1.5">
             <div className="w-8 h-8 rounded-sm bg-[#193d2c] text-[#f7f9f7] flex items-center justify-center shadow-xs">
               <BookOpen size={17} />
@@ -135,7 +135,7 @@ export function Navigation() {
               </h1>
             </div>
           </div>
-          <div className="text-[11px] text-[#59635e] flex items-center gap-1.5 mt-2 bg-[#f5f2eb] border border-[#e5e0d5]/60 px-2.5 py-1 rounded-sm">
+          <div className="text-[11px] text-[#59635e] flex items-center gap-1.5 mt-2 bg-[#ffffff] border border-[#e5e0d5]/60 px-2.5 py-1 rounded-sm">
             <Clock size={12} className="text-[#193d2c]" />
             <span className="font-mono-fig">{formattedDate}</span>
             <span className="font-mono-fig text-[#193d2c] font-semibold ml-auto">{formattedTime}</span>
@@ -185,7 +185,7 @@ export function Navigation() {
         </nav>
 
         {/* Bottom User Profile card */}
-        <div className="p-3.5 border-t border-[#e5e0d5] bg-[#fbfaf7]">
+        <div className="p-3.5 border-t border-[#e5e0d5] bg-[#ffffff]">
           <div className="flex items-start justify-between gap-2 mb-2.5">
             <div className="min-w-0">
               <span className="text-xs font-bold text-[#131715] block truncate">
@@ -209,7 +209,7 @@ export function Navigation() {
               className={`w-full mb-2 px-2 py-1.5 text-[11px] font-medium border rounded-sm flex items-center justify-between transition-colors cursor-pointer ${
                 credentialSource === 'fallback'
                   ? 'bg-[#faeaea] border-[#f0c2c2] text-[#942426] hover:bg-[#f6dcdc]'
-                  : 'bg-[#f5f2eb] border-[#e5e0d5] text-[#193d2c] hover:bg-[#e6f0ea]'
+                  : 'bg-[#ffffff] border-[#e5e0d5] text-[#193d2c] hover:bg-[#e6f0ea]'
               }`}
               title="Click to check Supabase connection & diagnostics (Admin only)"
             >
@@ -228,7 +228,7 @@ export function Navigation() {
           <button
             onClick={handleSync}
             disabled={isSyncing}
-            className="w-full mb-2 px-2 py-1.5 text-xs font-medium bg-[#f5f2eb] border border-[#e5e0d5] hover:bg-[#e6f0ea] text-[#193d2c] rounded-sm flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+            className="w-full mb-2 px-2 py-1.5 text-xs font-medium bg-[#ffffff] border border-[#e5e0d5] hover:bg-[#e6f0ea] text-[#193d2c] rounded-sm flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer disabled:opacity-50"
             title="Sync data with database"
           >
             <RefreshCw size={13} className={isSyncing ? 'animate-spin' : ''} />
@@ -256,7 +256,7 @@ export function Navigation() {
           <button
             id="mobile-menu-toggle-btn"
             onClick={() => setDrawerOpen(true)}
-            className="w-10 h-10 -ml-1 rounded flex items-center justify-center text-[#131715] active:bg-[#f5f2eb] transition-colors"
+            className="w-10 h-10 -ml-1 rounded flex items-center justify-center text-[#131715] active:bg-[#ffffff] transition-colors"
             aria-label="Open navigation drawer"
           >
             <Menu size={20} />
@@ -278,7 +278,7 @@ export function Navigation() {
           <button
             id="mobile-signout-btn"
             onClick={signOut}
-            className="flex items-center gap-1 text-xs bg-[#f5f2eb] border border-[#e5e0d5] px-2.5 py-1.5 rounded-full text-[#131715] font-medium active:bg-[#e5e0d5]"
+            className="flex items-center gap-1 text-xs bg-[#ffffff] border border-[#e5e0d5] px-2.5 py-1.5 rounded-full text-[#131715] font-medium active:bg-[#e5e0d5]"
             title="Sign out of register"
           >
             <LogOut size={13} className="text-[#942426]" />
@@ -393,7 +393,7 @@ export function Navigation() {
               className="fixed inset-y-0 left-0 w-4/5 max-w-xs bg-[#ffffff] z-50 flex flex-col shadow-2xl border-r border-[#e5e0d5] lg:hidden"
             >
               {/* Drawer Header */}
-              <div className="p-4 border-b border-[#e5e0d5] flex items-center justify-between bg-[#fbfaf7]">
+              <div className="p-4 border-b border-[#e5e0d5] flex items-center justify-between bg-[#ffffff]">
                 <div>
                   <span className="font-mono-fig text-[10px] uppercase tracking-wider text-[#193d2c] font-bold block">
                     Hostel Mess Ledger
@@ -402,14 +402,14 @@ export function Navigation() {
                 </div>
                 <button
                   onClick={() => setDrawerOpen(false)}
-                  className="w-8 h-8 rounded flex items-center justify-center text-[#59635e] hover:text-[#131715] active:bg-[#f5f2eb]"
+                  className="w-8 h-8 rounded flex items-center justify-center text-[#59635e] hover:text-[#131715] active:bg-[#ffffff]"
                 >
                   <X size={18} />
                 </button>
               </div>
 
               {/* Time display */}
-              <div className="px-4 py-2 border-b border-[#e5e0d5] bg-[#f5f2eb] flex items-center justify-between text-xs font-mono-fig text-[#59635e]">
+              <div className="px-4 py-2 border-b border-[#e5e0d5] bg-[#ffffff] flex items-center justify-between text-xs font-mono-fig text-[#59635e]">
                 <span>{formattedDate}</span>
                 <span className="font-semibold text-[#193d2c]">{formattedTime}</span>
               </div>
@@ -429,7 +429,7 @@ export function Navigation() {
                       className={`w-full flex items-center gap-3 px-3 py-3 rounded text-sm transition-colors text-left ${
                         isActive
                           ? 'bg-[#193d2c] text-[#f7f9f7] font-semibold'
-                          : 'text-[#131715] active:bg-[#f5f2eb]'
+                          : 'text-[#131715] active:bg-[#ffffff]'
                       }`}
                     >
                       <div className="flex items-center justify-between w-full min-w-0">
@@ -449,7 +449,7 @@ export function Navigation() {
               </div>
 
               {/* Drawer Footer with Profile */}
-              <div className="p-4 border-t border-[#e5e0d5] bg-[#fbfaf7]">
+              <div className="p-4 border-t border-[#e5e0d5] bg-[#ffffff]">
                 <div className="mb-3">
                   <span className="text-xs font-bold text-[#131715] block">
                     {profile?.name || 'Guest'}
@@ -483,7 +483,7 @@ export function Navigation() {
                 <button
                   onClick={handleSync}
                   disabled={isSyncing}
-                  className="w-full mb-2 px-2 py-2 text-xs font-medium bg-[#f5f2eb] border border-[#e5e0d5] hover:bg-[#e6f0ea] text-[#193d2c] rounded flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                  className="w-full mb-2 px-2 py-2 text-xs font-medium bg-[#ffffff] border border-[#e5e0d5] hover:bg-[#e6f0ea] text-[#193d2c] rounded flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <RefreshCw size={13} className={isSyncing ? 'animate-spin' : ''} />
                   <span>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>

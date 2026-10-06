@@ -49,7 +49,7 @@ export function AuditLogView() {
             className={`px-3 py-1.5 text-xs rounded-sm transition-colors cursor-pointer shrink-0 ${
               filterType === 'all'
                 ? 'bg-[#193d2c] text-[#f7f9f7] font-semibold'
-                : 'bg-white border border-[#e5e0d5] text-[#131715] hover:bg-[#f5f2eb]'
+                : 'bg-white border border-[#e5e0d5] text-[#131715] hover:bg-[#ffffff]'
             }`}
           >
             All Logs ({auditLogs.length})
@@ -68,8 +68,8 @@ export function AuditLogView() {
             onClick={() => setFilterType('grace')}
             className={`px-3 py-1.5 text-xs rounded-sm transition-colors cursor-pointer shrink-0 ${
               filterType === 'grace'
-                ? 'bg-[#996515] text-white font-semibold'
-                : 'bg-white border border-[#e5e0d5] text-[#996515] hover:bg-[#faf4e6]'
+                ? 'bg-[#9e743a] text-white font-semibold'
+                : 'bg-white border border-[#e5e0d5] text-[#9e743a] hover:bg-[#faf4e6]'
             }`}
           >
             Grace Period Edits
@@ -235,7 +235,7 @@ export function AuditLogView() {
                         {log.user_name || log.profiles?.name || 'Staff User'}
                       </td>
                       <td className="py-2.5 px-3 text-xs whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded-sm bg-[#f5f2eb] border border-[#e5e0d5] font-medium text-[#131715]">
+                        <span className="px-2 py-0.5 rounded-sm bg-[#ffffff] border border-[#e5e0d5] font-medium text-[#131715]">
                           {displayAction}
                         </span>
                       </td>
@@ -248,7 +248,7 @@ export function AuditLogView() {
                             className={
                               activeStampLabel === 'ADJUSTMENT'
                                 ? 'ledger-stamp mr-2 align-middle'
-                                : 'inline-block px-2 py-0.5 text-[10px] font-bold rounded-sm bg-[#faf4e6] text-[#996515] border border-[#996515]/40 mr-2 align-middle'
+                                : 'inline-block px-2 py-0.5 text-[10px] font-bold rounded-sm bg-[#faf4e6] text-[#9e743a] border border-[#9e743a]/40 mr-2 align-middle'
                             }
                           >
                             {activeStampLabel}

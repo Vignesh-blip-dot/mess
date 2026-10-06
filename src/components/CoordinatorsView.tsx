@@ -135,7 +135,7 @@ export function CoordinatorsView() {
           </div>
           <button
             onClick={() => navigateTo('create-account')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-white border border-[#e5e0d5] hover:bg-[#f5f2eb] text-xs font-semibold text-[#193d2c] self-start sm:self-auto shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-white border border-[#e5e0d5] hover:bg-[#ffffff] text-xs font-semibold text-[#193d2c] self-start sm:self-auto shadow-xs transition-colors cursor-pointer"
           >
             <UserPlus size={14} />
             <span>Create New Account</span>
@@ -193,7 +193,7 @@ export function CoordinatorsView() {
                             On-duty
                           </span>
                         ) : coord.status === 'Off-duty' ? (
-                          <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#f5f2eb] text-[#59635e] border border-[#e5e0d5]">
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#ffffff] text-[#59635e] border border-[#e5e0d5]">
                             Off-duty
                           </span>
                         ) : (
@@ -301,7 +301,7 @@ export function CoordinatorsView() {
             <button
               type="submit"
               disabled={isAssigning}
-              className="w-full py-2 px-3 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#122e21] active:scale-[0.99] transition-all shadow-xs cursor-pointer"
+              className="w-full py-2 px-3 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#112a1f] active:scale-[0.99] transition-all shadow-xs cursor-pointer"
             >
               {isAssigning ? 'Saving Duty...' : 'Save Duty Assignment'}
             </button>
@@ -309,7 +309,7 @@ export function CoordinatorsView() {
         </div>
 
         {/* Duty Guidelines & Account Management Notice */}
-        <div className="md:col-span-5 bg-[#fbfaf7] border border-[#e5e0d5] rounded-sm p-4 sm:p-5 space-y-3.5 text-xs flex flex-col justify-between">
+        <div className="md:col-span-5 bg-[#ffffff] border border-[#e5e0d5] rounded-sm p-4 sm:p-5 space-y-3.5 text-xs flex flex-col justify-between">
           <div className="space-y-3">
             <div className="flex items-center gap-1.5 text-[#193d2c] font-bold">
               <Shield size={16} />

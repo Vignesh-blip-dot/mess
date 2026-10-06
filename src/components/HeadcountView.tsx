@@ -103,28 +103,28 @@ export function HeadcountView() {
         </h3>
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <div className="bg-[#fbfaf7] border border-[#e5e0d5] p-3 rounded-sm">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] p-3 rounded-sm">
             <span className="text-[11px] text-[#59635e] block font-medium mb-1">Total Expenditure</span>
             <span className="font-mono-fig text-xl font-bold text-[#131715] block">
               {formatCurrency(summary.total_expenditure)}
             </span>
           </div>
 
-          <div className="bg-[#fbfaf7] border border-[#e5e0d5] p-3 rounded-sm">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] p-3 rounded-sm">
             <span className="text-[11px] text-[#59635e] block font-medium mb-1">Students Ate</span>
             <span className="font-mono-fig text-xl font-semibold text-[#131715] block">
               {summary.student_count ?? '—'}
             </span>
           </div>
 
-          <div className="bg-[#fbfaf7] border border-[#e5e0d5] p-3 rounded-sm">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] p-3 rounded-sm">
             <span className="text-[11px] text-[#59635e] block font-medium mb-1">Guests Ate</span>
             <span className="font-mono-fig text-xl font-semibold text-[#131715] block">
               {summary.guest_count ?? '—'}
             </span>
           </div>
 
-          <div className="bg-[#fbfaf7] border border-[#e5e0d5] p-3 rounded-sm">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] p-3 rounded-sm">
             <span className="text-[11px] text-[#59635e] block font-medium mb-1">Total Diners</span>
             <span className="font-mono-fig text-xl font-semibold text-[#131715] block">
               {summary.total_people ?? '—'}
@@ -178,14 +178,14 @@ export function HeadcountView() {
               />
               <button
                 onClick={handleSaveStudents}
-                className="w-full py-2 px-3 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#122e21] active:scale-[0.99] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                className="w-full py-2 px-3 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#112a1f] active:scale-[0.99] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <Check size={14} />
                 <span>Save Student Count</span>
               </button>
             </div>
           ) : (
-            <div className="p-3 bg-[#f5f2eb] border border-[#e5e0d5]/60 rounded-sm text-xs text-[#59635e]">
+            <div className="p-3 bg-[#ffffff] border border-[#e5e0d5]/60 rounded-sm text-xs text-[#59635e]">
               View only: Student attendance must be updated by the Hostel Incharge.
             </div>
           )}
@@ -219,14 +219,14 @@ export function HeadcountView() {
               />
               <button
                 onClick={handleSaveGuests}
-                className="w-full py-2 px-3 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#122e21] active:scale-[0.99] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                className="w-full py-2 px-3 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#112a1f] active:scale-[0.99] transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <Check size={14} />
                 <span>Save Guest Count</span>
               </button>
             </div>
           ) : (
-            <div className="p-3 bg-[#f5f2eb] border border-[#e5e0d5]/60 rounded-sm text-xs text-[#59635e]">
+            <div className="p-3 bg-[#ffffff] border border-[#e5e0d5]/60 rounded-sm text-xs text-[#59635e]">
               View only: Guest coupons are entered by on-duty mess coordinators.
             </div>
           )}

@@ -150,12 +150,12 @@ export function StockAdjustmentView() {
                 >
                   <div className="flex justify-between items-center">
                     <span className="font-semibold text-sm">{ing.name}</span>
-                    <span className={`text-xs font-mono-fig ${ingredientId === ing.ingredient_id ? 'text-[#e5e0d5]' : 'text-[#59635e]'}`}>
+                    <span className={`text-xs font-mono-fig ${ingredientId === ing.ingredient_id ? 'text-[#e6f0ea]' : 'text-[#59635e]'}`}>
                       {ing.current_stock} {ing.unit}
                     </span>
                   </div>
                   {ing.name_telugu && (
-                    <div className={`text-[10px] mt-0.5 ${ingredientId === ing.ingredient_id ? 'text-[#e5e0d5]/80' : 'text-[#59635e]'}`}>
+                    <div className={`text-[10px] mt-0.5 ${ingredientId === ing.ingredient_id ? 'text-[#e6f0ea]/80' : 'text-[#59635e]'}`}>
                       {ing.name_telugu}
                     </div>
                   )}
@@ -190,10 +190,10 @@ export function StockAdjustmentView() {
                 <div className="p-5 border-b border-[#e5e0d5] bg-[#193d2c] text-white flex justify-between items-center">
                   <div>
                     <h3 className="text-lg font-serif font-bold">{selectedIng.name}</h3>
-                    <p className="text-xs text-[#e5e0d5] mt-1 tracking-wider uppercase">Adjustment Ticket</p>
+                    <p className="text-xs text-[#e6f0ea] mt-1 tracking-wider uppercase">Adjustment Ticket</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] uppercase text-[#e5e0d5] mb-0.5">Current Recorded Stock</p>
+                    <p className="text-[10px] uppercase text-[#e6f0ea] mb-0.5">Current Recorded Stock</p>
                     <p className="text-xl font-mono-fig font-bold">{currentStock} {selectedIng.unit}</p>
                   </div>
                 </div>
@@ -208,7 +208,7 @@ export function StockAdjustmentView() {
                         type="button"
                         onClick={() => setAdjMode('remove')}
                         className={`p-3 border rounded-sm flex flex-col items-center justify-center gap-2 transition-colors ${
-                          adjMode === 'remove' ? 'bg-[#fdf2f2] border-[#942426] text-[#942426]' : 'bg-[#fcfafa] border-[#e5e0d5] text-[#59635e] hover:border-[#131715]'
+                          adjMode === 'remove' ? 'bg-[#faeaea] border-[#942426] text-[#942426]' : 'bg-[#fcfafa] border-[#e5e0d5] text-[#59635e] hover:border-[#131715]'
                         }`}
                       >
                         <PackageMinus size={20} />
@@ -218,7 +218,7 @@ export function StockAdjustmentView() {
                         type="button"
                         onClick={() => setAdjMode('add')}
                         className={`p-3 border rounded-sm flex flex-col items-center justify-center gap-2 transition-colors ${
-                          adjMode === 'add' ? 'bg-[#f2fdf5] border-[#193d2c] text-[#193d2c]' : 'bg-[#fcfafa] border-[#e5e0d5] text-[#59635e] hover:border-[#131715]'
+                          adjMode === 'add' ? 'bg-[#eaf4ec] border-[#193d2c] text-[#193d2c]' : 'bg-[#fcfafa] border-[#e5e0d5] text-[#59635e] hover:border-[#131715]'
                         }`}
                       >
                         <PackagePlus size={20} />
@@ -228,7 +228,7 @@ export function StockAdjustmentView() {
                         type="button"
                         onClick={() => setAdjMode('set')}
                         className={`p-3 border rounded-sm flex flex-col items-center justify-center gap-2 transition-colors ${
-                          adjMode === 'set' ? 'bg-[#f5f2eb] border-[#d4a017] text-[#8a680e]' : 'bg-[#fcfafa] border-[#e5e0d5] text-[#59635e] hover:border-[#131715]'
+                          adjMode === 'set' ? 'bg-[#faf3e8] border-[#9e743a] text-[#9e743a]' : 'bg-[#fcfafa] border-[#e5e0d5] text-[#59635e] hover:border-[#131715]'
                         }`}
                       >
                         <Scale size={20} />
@@ -334,7 +334,7 @@ export function StockAdjustmentView() {
                   )}
 
                   {/* Dynamic Preview Footer */}
-                  <div className="mt-auto bg-[#f5f2eb] p-4 rounded-sm border border-[#e5e0d5] flex items-center justify-between">
+                  <div className="mt-auto bg-[#fbfaf7] p-4 rounded-sm border border-[#e5e0d5] flex items-center justify-between">
                     <div className="flex gap-6 text-sm font-mono-fig">
                       <div>
                         <span className="block text-[10px] uppercase font-sans text-[#59635e] font-bold">Effect</span>
@@ -351,7 +351,7 @@ export function StockAdjustmentView() {
                     <button
                       type="submit"
                       disabled={isSubmitting || !amountInput || !reason}
-                      className="py-2.5 px-6 rounded-sm bg-[#131715] text-white font-semibold text-sm hover:bg-[#2a332e] active:scale-[0.98] transition-all shadow-sm disabled:opacity-50 disabled:active:scale-100 cursor-pointer"
+                      className="py-2.5 px-6 rounded-sm bg-[#193d2c] text-[#f7f9f7] font-semibold text-sm hover:bg-[#112a1f] active:scale-[0.98] transition-all shadow-sm disabled:opacity-50 disabled:active:scale-100 cursor-pointer"
                     >
                       {submitAsRequest ? 'Submit for Approval' : 'Stamp Adjustment'}
                     </button>
@@ -373,7 +373,7 @@ export function StockAdjustmentView() {
             className="bg-white border border-[#e5e0d5] rounded-sm p-6 max-w-md w-full shadow-2xl space-y-4"
           >
             <div className="flex items-center gap-2 text-[#131715]">
-              <AlertTriangle size={22} className={submitAsRequest ? "text-[#d4a017]" : "text-[#942426]"} />
+              <AlertTriangle size={22} className={submitAsRequest ? "text-[#9e743a]" : "text-[#942426]"} />
               <h3 className="font-serif text-xl font-bold">
                 {submitAsRequest ? 'Submit Request?' : 'Stamp Ledger?'}
               </h3>
@@ -405,7 +405,7 @@ export function StockAdjustmentView() {
             <div className="flex items-center justify-end gap-2 pt-4">
               <button
                 onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2.5 text-sm font-medium bg-white border border-[#e5e0d5] text-[#131715] rounded-sm hover:bg-[#f5f2eb] cursor-pointer"
+                className="px-4 py-2.5 text-sm font-medium bg-white border border-[#e5e0d5] text-[#131715] rounded-sm hover:bg-[#f4f7f5] cursor-pointer"
               >
                 Cancel
               </button>

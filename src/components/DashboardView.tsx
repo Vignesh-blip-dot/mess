@@ -88,7 +88,7 @@ export function DashboardView() {
             <button
               id="dash-quick-purchase-btn"
               onClick={() => navigateTo('log-purchase')}
-              className="px-3.5 py-2 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#122e21] active:scale-[0.99] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#112a1f] active:scale-[0.99] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
               <ShoppingBag size={14} />
               <span>+ Purchase</span>
@@ -96,7 +96,7 @@ export function DashboardView() {
             <button
               id="dash-quick-usage-btn"
               onClick={() => navigateTo('log-usage')}
-              className="px-3.5 py-2 text-xs font-semibold rounded-sm bg-white border border-[#e5e0d5] text-[#131715] hover:bg-[#f5f2eb] active:scale-[0.99] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2 text-xs font-semibold rounded-sm bg-white border border-[#e5e0d5] text-[#131715] hover:bg-[#ffffff] active:scale-[0.99] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
               <TrendingDown size={14} className="text-[#942426]" />
               <span>- Log Usage</span>
@@ -116,7 +116,7 @@ export function DashboardView() {
           </div>
           <button
             onClick={() => setDatabaseModalOpen(true)}
-            className="px-3 py-1.5 bg-[#193d2c] text-[#f7f9f7] rounded-sm font-semibold hover:bg-[#122e21] transition-colors shrink-0 cursor-pointer text-xs"
+            className="px-3 py-1.5 bg-[#193d2c] text-[#f7f9f7] rounded-sm font-semibold hover:bg-[#112a1f] transition-colors shrink-0 cursor-pointer text-xs"
           >
             Configure Supabase Connection
           </button>
@@ -139,7 +139,7 @@ export function DashboardView() {
               className={`px-2.5 py-1 text-xs rounded-sm border transition-colors ${
                 selectedDate === todayStr
                   ? 'bg-[#193d2c] text-[#f7f9f7] border-[#193d2c] font-semibold'
-                  : 'bg-white border-[#e5e0d5] text-[#131715] hover:bg-[#f5f2eb]'
+                  : 'bg-white border-[#e5e0d5] text-[#131715] hover:bg-[#ffffff]'
               }`}
             >
               Today
@@ -149,7 +149,7 @@ export function DashboardView() {
               className={`px-2.5 py-1 text-xs rounded-sm border transition-colors ${
                 selectedDate === yesterdayStr
                   ? 'bg-[#193d2c] text-[#f7f9f7] border-[#193d2c] font-semibold'
-                  : 'bg-white border-[#e5e0d5] text-[#131715] hover:bg-[#f5f2eb]'
+                  : 'bg-white border-[#e5e0d5] text-[#131715] hover:bg-[#ffffff]'
               }`}
             >
               Yesterday
@@ -167,7 +167,7 @@ export function DashboardView() {
 
         {/* 5 Headcount & Cost metrics */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <div className="bg-[#fbfaf7] border border-[#e5e0d5] rounded-sm p-3">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] rounded-sm p-3">
             <span className="text-[11px] text-[#59635e] block font-medium mb-1">
               Total Expenditure
             </span>
@@ -176,7 +176,7 @@ export function DashboardView() {
             </span>
           </div>
 
-          <div className="bg-[#fbfaf7] border border-[#e5e0d5] rounded-sm p-3">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] rounded-sm p-3">
             <span className="text-[11px] text-[#59635e] block font-medium mb-1">
               Students Ate
             </span>
@@ -185,7 +185,7 @@ export function DashboardView() {
             </span>
           </div>
 
-          <div className="bg-[#fbfaf7] border border-[#e5e0d5] rounded-sm p-3">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] rounded-sm p-3">
             <span className="text-[11px] text-[#59635e] block font-medium mb-1">
               Guests Ate
             </span>
@@ -194,7 +194,7 @@ export function DashboardView() {
             </span>
           </div>
 
-          <div className="bg-[#fbfaf7] border border-[#e5e0d5] rounded-sm p-3">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] rounded-sm p-3">
             <span className="text-[11px] text-[#59635e] block font-medium mb-1">
               Total People
             </span>
@@ -214,7 +214,7 @@ export function DashboardView() {
         </div>
 
         {daySummary.total_people == null && (
-          <div className="mt-3 flex items-center justify-between text-xs text-[#59635e] bg-[#f5f2eb] px-3 py-2 rounded-sm border border-[#e5e0d5]/60">
+          <div className="mt-3 flex items-center justify-between text-xs text-[#59635e] bg-[#ffffff] px-3 py-2 rounded-sm border border-[#e5e0d5]/60">
             <span>
               No headcount entered for {selectedDate} yet. Cost per head calculates once attendance is recorded.
             </span>
@@ -262,10 +262,9 @@ export function DashboardView() {
             {formatCurrency(perishablesValue)}
           </div>
           <span className="text-[11px] text-[#59635e] mt-1 block">
-            Milk, eggs, vegetables &amp; dairy items
+            Milk, eggs &amp; dairy items
           </span>
         </div>
-
         <div
           onClick={() => navigateTo('ingredients')}
           className="bg-white border border-[#e5e0d5] rounded-sm p-4 cursor-pointer hover:border-[#193d2c] transition-all shadow-[0_1px_3px_rgba(19,23,21,0.03)] hover:shadow-[0_2px_6px_rgba(19,23,21,0.06)]"

@@ -13,7 +13,13 @@ import {
   UserRole,
 } from '../types';
 import { createClient } from '@supabase/supabase-js';
-import { getSupabase, supabase, runSupabaseHealthCheck, getActiveCredentials } from '../lib/supabase';
+import {
+  getSupabase,
+  supabase,
+  runSupabaseHealthCheck,
+  getActiveCredentials,
+  resetSupabaseCredentials,
+} from '../lib/supabase';
 import {
   INITIAL_PROFILES,
   INITIAL_INGREDIENTS,
@@ -62,7 +68,12 @@ interface AppContextType {
     pass: string;
     role: UserRole;
   }) => Promise<{ success: boolean; error?: string }>;
-  loginWithSupabase: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithSupabase: (
+    email: string,
+    pass: string,
+    allowOfflineFallback?: boolean
+  ) => Promise<{ success: boolean; error?: string; canOfflineLogin?: boolean }>;
+  loginOffline: (email: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   switchDemoProfile: (profileId: string, customAccess?: CoordinatorAccessLevel) => void;
   logPurchaseBatch: (data: { items: { ingredientId: string; quantity: number; totalCost: number }[]; usageDate: string; vendor?: string }) => Promise<boolean>;
@@ -85,7 +96,7 @@ interface AppContextType {
   addIngredient: (data: {
     name: string;
     name_telugu?: string;
-    category: 'provisions' | 'perishable';
+    category: IngredientCategory;
     unit: string;
     tracks_usage: boolean;
   }) => Promise<boolean>;
@@ -315,25 +326,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const client = getSupabase();
 
     try {
-      // 1. Fetch Ingredients (try view first, then table)
-      let rawIngredients: any[] | null = null;
-      const { data: viewData, error: viewErr } = await client
-        .from('ingredient_current_stock')
-        .select('*');
-
+      // 1. Fetch Ingredients table (contains name_telugu) and current stock view
       const { data: tableData, error: tableErr } = await client
         .from('ingredients')
         .select('*')
         .order('name');
 
-      if (!viewErr && viewData && viewData.length > 0) {
-        rawIngredients = viewData;
-        anySuccess = true;
-        totalCount += viewData.length;
-      } else if (!tableErr && tableData && tableData.length > 0) {
+      const { data: viewData, error: viewErr } = await client
+        .from('ingredient_current_stock')
+        .select('*');
+
+      const stockMap: Record<string, number> = {};
+      const viewTeluguMap: Record<string, string> = {};
+      if (viewData && viewData.length > 0) {
+        viewData.forEach((v: any) => {
+          const id = String(v.ingredient_id || v.id || '');
+          if (id) {
+            stockMap[id] = Number(v.current_stock ?? 0);
+            if (v.name_telugu) viewTeluguMap[id] = v.name_telugu;
+          }
+        });
+      }
+
+      let rawIngredients: any[] | null = null;
+      if (!tableErr && tableData && tableData.length > 0) {
         rawIngredients = tableData;
         anySuccess = true;
         totalCount += tableData.length;
+      } else if (!viewErr && viewData && viewData.length > 0) {
+        rawIngredients = viewData;
+        anySuccess = true;
+        totalCount += viewData.length;
       } else if (!tableErr && tableData && tableData.length === 0) {
         anySuccess = true; // Table reached successfully
       }
@@ -345,13 +368,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       let ingredientMap: Record<string, Ingredient> = {};
       if (rawIngredients && rawIngredients.length > 0) {
         const mappedIngredients: Ingredient[] = rawIngredients.map((row: any) => {
-          const ingId = String(row.ingredient_id || row.id || row.item_id || row._id || Math.random().toString());
+          const ingId = String(row.id || row.ingredient_id || row.item_id || row._id || Math.random().toString());
           const name = row.name || row.ingredient_name || row.item_name || row.title || 'Unnamed Ingredient';
-          const telugu = row.name_telugu || row.telugu_name || null;
+          const telugu = row.name_telugu || row.telugu_name || viewTeluguMap[ingId] || null;
           const category = (row.category as IngredientCategory) || (row.is_perishable ? 'perishable' : 'provisions') || 'provisions';
           const unit = row.unit || row.unit_of_measure || row.uom || 'kg';
           const stock = Number(
-            row.current_stock ?? row.stock ?? row.quantity ?? row.stock_quantity ?? row.available_stock ?? 0
+            stockMap[ingId] ?? row.current_stock ?? row.stock ?? row.quantity ?? row.stock_quantity ?? row.available_stock ?? 0
           );
           const price = Number(
             row.current_price ?? row.price ?? row.unit_price ?? row.rate ?? row.cost ?? row.average_price ?? 0
@@ -735,21 +758,83 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Sign in via local offline profile (fallback when Supabase network is unreachable)
+  const loginOffline = async (email: string) => {
+    const trimmed = email.trim().toLowerCase();
+    const found = allProfiles.find((p) => p.email?.toLowerCase() === trimmed);
+    if (!found) {
+      return { success: false, error: 'No profile found for this email.' };
+    }
+    setProfile(found);
+    sessionStorage.setItem('mess_profile', JSON.stringify(found));
+    const level = await calculateAccessLevel(found.id, found.role, assignments);
+    setAccessLevel(level);
+    sessionStorage.setItem('mess_access_level', level);
+    showToast(`Signed in in Offline Local Mode as ${found.name} (${found.role}).`);
+    return { success: true };
+  };
+
   // Sign in via Supabase Auth
-  const loginWithSupabase = async (email: string, pass: string) => {
+  const loginWithSupabase = async (
+    email: string,
+    pass: string,
+    allowOfflineFallback = false
+  ) => {
     setIsLoading(true);
+    const trimmedEmail = email.trim();
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+      let client = getSupabase();
+      let { data, error } = await client.auth.signInWithPassword({
+        email: trimmedEmail,
         password: pass,
       });
 
-      if (error || !data.user) {
-        setIsLoading(false);
-        return { success: false, error: error?.message || 'Login failed' };
+      const isNetworkErr =
+        error &&
+        (error.message.toLowerCase().includes('failed to fetch') ||
+          error.message.toLowerCase().includes('fetch') ||
+          error.message.toLowerCase().includes('networkerror'));
+
+      // If a custom URL was saved in localStorage and failed network fetch,
+      // auto-recover to the primary canonical project database!
+      if ((!data?.user || error) && isNetworkErr) {
+        const creds = getActiveCredentials();
+        if (creds.isCustom) {
+          console.warn('Custom Supabase host unreachable. Auto-recovering to primary project database...');
+          resetSupabaseCredentials();
+          client = getSupabase();
+          const retryRes = await client.auth.signInWithPassword({
+            email: trimmedEmail,
+            password: pass,
+          });
+          data = retryRes.data;
+          error = retryRes.error;
+        }
       }
 
-      const { data: p } = await supabase
+      if (error || !data?.user) {
+        setIsLoading(false);
+        const errMsg = error?.message || 'Login failed';
+        const isNet =
+          errMsg.toLowerCase().includes('failed to fetch') ||
+          errMsg.toLowerCase().includes('fetch') ||
+          errMsg.toLowerCase().includes('networkerror');
+        const matchingProfile = allProfiles.find(
+          (p) => p.email?.toLowerCase() === trimmedEmail.toLowerCase()
+        );
+
+        if (isNet && allowOfflineFallback && matchingProfile) {
+          return await loginOffline(trimmedEmail);
+        }
+
+        return {
+          success: false,
+          error: errMsg,
+          canOfflineLogin: Boolean(isNet && matchingProfile),
+        };
+      }
+
+      const { data: p } = await client
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
@@ -759,9 +844,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!p) {
         activeProfile = {
           id: data.user.id,
-          name: email.split('@')[0],
+          name: trimmedEmail.split('@')[0],
           role: 'coordinator',
-          email,
+          email: trimmedEmail,
         };
       } else {
         activeProfile = p;
@@ -778,9 +863,70 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
       return { success: true };
     } catch (err: unknown) {
-      setIsLoading(false);
       const msg = err instanceof Error ? err.message : 'Authentication failed';
-      return { success: false, error: msg };
+      const isNetworkErr =
+        msg.toLowerCase().includes('failed to fetch') ||
+        msg.toLowerCase().includes('fetch') ||
+        msg.toLowerCase().includes('networkerror');
+
+      // Attempt auto-recovery if custom credentials failed
+      if (isNetworkErr) {
+        const creds = getActiveCredentials();
+        if (creds.isCustom) {
+          try {
+            console.warn('Custom Supabase host threw network error. Auto-recovering to primary database...');
+            resetSupabaseCredentials();
+            const retryClient = getSupabase();
+            const retryRes = await retryClient.auth.signInWithPassword({
+              email: trimmedEmail,
+              password: pass,
+            });
+
+            if (retryRes.data?.user) {
+              const { data: p } = await retryClient
+                .from('profiles')
+                .select('*')
+                .eq('id', retryRes.data.user.id)
+                .single();
+
+              const activeProfile: UserProfile = p || {
+                id: retryRes.data.user.id,
+                name: trimmedEmail.split('@')[0],
+                role: 'coordinator',
+                email: trimmedEmail,
+              };
+
+              setProfile(activeProfile);
+              sessionStorage.setItem('mess_profile', JSON.stringify(activeProfile));
+              const level = await calculateAccessLevel(activeProfile.id, activeProfile.role, assignments);
+              setAccessLevel(level);
+              sessionStorage.setItem('mess_access_level', level);
+
+              showToast(`Signed in successfully as ${activeProfile.name}.`);
+              await refreshDataFromSupabase();
+              setIsLoading(false);
+              return { success: true };
+            }
+          } catch {
+            // fallback below
+          }
+        }
+      }
+
+      setIsLoading(false);
+      const matchingProfile = allProfiles.find(
+        (p) => p.email?.toLowerCase() === trimmedEmail.toLowerCase()
+      );
+
+      if (isNetworkErr && allowOfflineFallback && matchingProfile) {
+        return await loginOffline(trimmedEmail);
+      }
+
+      return {
+        success: false,
+        error: msg,
+        canOfflineLogin: Boolean(isNetworkErr && matchingProfile),
+      };
     }
   };
 
@@ -1165,7 +1311,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       updatedIngsMap.set(ingredientId, { ...ing, current_stock: newStock });
       
-      const itemMeal = ing.category === 'perishable' ? null : (mealType || null);
+      const itemMeal = (ing.category === 'perishable' ) ? null : (mealType || null);
 
       const newTxn: StockTransaction = {
         id: `txn-${now++}`,
@@ -1484,7 +1630,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }: {
     name: string;
     name_telugu?: string;
-    category: 'provisions' | 'perishable';
+    category: IngredientCategory;
     unit: string;
     tracks_usage: boolean;
   }) => {
@@ -1894,6 +2040,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         signUpWithSupabase,
         adminCreateAccount,
         loginWithSupabase,
+        loginOffline,
         signOut,
         switchDemoProfile,
         logPurchaseBatch,

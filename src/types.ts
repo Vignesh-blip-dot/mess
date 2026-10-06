@@ -10,7 +10,7 @@ export interface UserProfile {
   active?: boolean;
 }
 
-export type IngredientCategory = 'provisions' | 'perishable';
+export type IngredientCategory = 'provisions' | 'perishable' ;
 
 export interface Ingredient {
   ingredient_id: string;
@@ -105,6 +105,9 @@ export interface StockAdjustmentRequestPayload {
 
 export type PageId =
   | 'dashboard'
+  
+  
+  
   | 'ingredients'
   | 'log-purchase'
   | 'log-usage'

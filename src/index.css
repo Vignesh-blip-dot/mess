@@ -5,9 +5,9 @@
   --paper-line: #e5e0d5;
   --ink: #131715;
   --ink-faint: #59635e;
-  --ink-muted: #858f89;
+  --ink-muted: #8b948f;
   --accent: #193d2c;
-  --accent-hover: #122e21;
+  --accent-hover: #112a1f;
   --accent-light: #e6f0ea;
   --accent-ink: #f7f9f7;
   --gold-accent: #9e743a;
@@ -128,7 +128,7 @@ h1, h2, h3, h4 {
   }
   body {
     background: #ffffff !important;
-    color: #000000 !important;
+    color: #131715 !important;
   }
   .report-page {
     page-break-after: always;

@@ -230,7 +230,7 @@ export function getInitialTransactions(): StockTransaction[] {
       total_cost: 1600.0,
       usage_date: today,
       meal_type: null,
-      vendor: 'Mandi Vegetable Trader - Shop #14',
+      vendor: 'Mandi Perishable Trader - Shop #14',
       reason: null,
       created_at: new Date(Date.now() - 3600000 * 6).toISOString(),
       created_by: 'usr-coord-1',
@@ -357,7 +357,7 @@ export const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [
     action: 'GRACE_EDIT',
     entity_name: 'stock_transactions',
     highlight_reason: 'grace_edit',
-    reason: 'Grace period correction: added late evening vegetable receipt voucher #402',
+    reason: 'Grace period correction: added late evening perishable receipt voucher #402',
   },
   {
     id: 'aud-5',

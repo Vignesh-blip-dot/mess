@@ -49,7 +49,7 @@ export function DatabaseStatusModal() {
   const [customKey, setCustomKey] = useState(currentCreds.key);
 
   const runCheck = async () => {
-    if (profile?.role !== 'admin') return;
+    if (profile && profile.role !== 'admin') return;
     setIsChecking(true);
     try {
       const rep = await runSupabaseHealthCheck();
@@ -62,7 +62,7 @@ export function DatabaseStatusModal() {
   };
 
   useEffect(() => {
-    if (isDatabaseModalOpen && profile?.role === 'admin') {
+    if (isDatabaseModalOpen && (!profile || profile.role === 'admin')) {
       const creds = getActiveCredentials();
       setCustomUrl(creds.url);
       setCustomKey(creds.key);
@@ -70,8 +70,8 @@ export function DatabaseStatusModal() {
     }
   }, [isDatabaseModalOpen, profile?.role]);
 
-  // Authorization check: ONLY admin can view or interact with this modal
-  if (!isDatabaseModalOpen || profile?.role !== 'admin') return null;
+  // Authorization check: ONLY admin (or unauthenticated user setting up DB) can view or interact with this modal
+  if (!isDatabaseModalOpen || (profile && profile.role !== 'admin')) return null;
 
   const handleSaveCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,7 +160,7 @@ VITE_SUPABASE_ANON_KEY=${customKey || 'your-anon-key-here'}`;
         className="bg-white border border-[#e5e0d5] rounded-lg shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col my-auto"
       >
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-[#e5e0d5] flex items-center justify-between bg-[#fbfaf7] shrink-0">
+        <div className="p-4 sm:p-5 border-b border-[#e5e0d5] flex items-center justify-between bg-[#ffffff] shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-sm bg-[#193d2c] text-[#f7f9f7] flex items-center justify-center shadow-xs">
               <Database size={16} />
@@ -185,7 +185,7 @@ VITE_SUPABASE_ANON_KEY=${customKey || 'your-anon-key-here'}`;
         {/* Modal Body */}
         <div className="p-4 sm:p-5 space-y-5 overflow-y-auto custom-scrollbar">
           {/* Active Connection Summary Badge */}
-          <div className="bg-[#f5f2eb] border border-[#e5e0d5] rounded-sm p-3.5 space-y-2">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] rounded-sm p-3.5 space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-[#59635e] uppercase tracking-wider">
@@ -281,7 +281,7 @@ VITE_SUPABASE_ANON_KEY=${customKey || 'your-anon-key-here'}`;
                 })}
               </div>
             ) : (
-              <div className="py-6 text-center text-xs text-[#59635e] bg-[#fbfaf7] border border-[#e5e0d5] rounded-sm">
+              <div className="py-6 text-center text-xs text-[#59635e] bg-[#ffffff] border border-[#e5e0d5] rounded-sm">
                 Running database diagnostics...
               </div>
             )}
@@ -295,7 +295,7 @@ VITE_SUPABASE_ANON_KEY=${customKey || 'your-anon-key-here'}`;
                 <button
                   onClick={handleSeedDatabase}
                   disabled={isSeeding}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#122e21] flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#112a1f] flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
                 >
                   <Sparkles size={13} />
                   <span>{isSeeding ? 'Seeding...' : 'Seed 14 Default Ingredients'}</span>
@@ -305,7 +305,7 @@ VITE_SUPABASE_ANON_KEY=${customKey || 'your-anon-key-here'}`;
           </div>
 
           {/* Form to connect user's own Supabase project */}
-          <div className="bg-[#fbfaf7] border border-[#e5e0d5] rounded-sm p-4 space-y-3">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] rounded-sm p-4 space-y-3">
             <div className="flex items-center gap-2">
               <KeyRound size={15} className="text-[#193d2c]" />
               <h4 className="font-serif text-sm font-bold text-[#131715]">
@@ -356,7 +356,7 @@ VITE_SUPABASE_ANON_KEY=${customKey || 'your-anon-key-here'}`;
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-4 py-2 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#122e21] transition-all shadow-xs cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#112a1f] transition-all shadow-xs cursor-pointer"
                 >
                   {isSaving ? 'Connecting...' : 'Connect & Fetch Live Data'}
                 </button>
@@ -382,9 +382,9 @@ VITE_SUPABASE_ANON_KEY=${customKey || 'your-anon-key-here'}`;
               </button>
             </div>
             <p className="text-xs text-[#59635e]">
-              In your VS Code workspace root, create a file named <code className="bg-[#f5f2eb] px-1 py-0.5 rounded font-mono text-[11px] text-[#131715]">.env</code>:
+              In your VS Code workspace root, create a file named <code className="bg-[#ffffff] px-1 py-0.5 rounded font-mono text-[11px] text-[#131715]">.env</code>:
             </p>
-            <pre className="bg-[#131715] text-[#e5e0d5] p-3 rounded-sm text-[11px] font-mono overflow-x-auto">
+            <pre className="bg-[#ffffff] text-[#e5e0d5] p-3 rounded-sm text-[11px] font-mono overflow-x-auto">
               {envFileSnippet}
             </pre>
             <p className="text-[11px] text-[#59635e]">
@@ -412,17 +412,17 @@ VITE_SUPABASE_ANON_KEY=${customKey || 'your-anon-key-here'}`;
             <p className="text-xs text-[#59635e]">
               If tables exist in your Supabase dashboard but the app displays 0 rows, Supabase Row Level Security (RLS) is blocking the anon key. Run this SQL in your Supabase SQL Editor:
             </p>
-            <pre className="bg-[#131715] text-[#e5e0d5] p-3 rounded-sm text-[11px] font-mono overflow-x-auto max-h-36 custom-scrollbar">
+            <pre className="bg-[#ffffff] text-[#e5e0d5] p-3 rounded-sm text-[11px] font-mono overflow-x-auto max-h-36 custom-scrollbar">
               {rlsFixSql}
             </pre>
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="p-3.5 sm:p-4 border-t border-[#e5e0d5] bg-[#fbfaf7] flex justify-end shrink-0">
+        <div className="p-3.5 sm:p-4 border-t border-[#e5e0d5] bg-[#ffffff] flex justify-end shrink-0">
           <button
             onClick={() => setDatabaseModalOpen(false)}
-            className="px-4 py-2 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#122e21] transition-all cursor-pointer shadow-xs"
+            className="px-4 py-2 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#112a1f] transition-all cursor-pointer shadow-xs"
           >
             Done
           </button>

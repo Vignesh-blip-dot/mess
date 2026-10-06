@@ -244,7 +244,7 @@ export function LogPurchaseView() {
               type="submit"
               id="purchase-submit-btn"
               disabled={isSubmitting || rows.length === 0}
-              className="w-full py-3 px-4 rounded-sm bg-[#193d2c] text-[#f7f9f7] font-semibold text-sm hover:bg-[#122e21] active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+              className="w-full py-3 px-4 rounded-sm bg-[#193d2c] text-[#f7f9f7] font-semibold text-sm hover:bg-[#112a1f] active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               <PlusCircle size={16} />
               <span>{isSubmitting ? 'Saving to Register...' : 'Save Bulk Purchase'}</span>

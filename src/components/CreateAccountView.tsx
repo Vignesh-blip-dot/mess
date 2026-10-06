@@ -153,7 +153,7 @@ export function CreateAccountView() {
 
             {/* Success Message */}
             {successMsg && (
-              <div className="mb-5 p-3 rounded-sm bg-[#eaf4ec] border border-[#c1dec6] text-[#193d2c] text-xs flex items-start gap-2">
+              <div className="mb-5 p-3 rounded-sm bg-[#eaf4ec] border border-[#e5e0d5] text-[#193d2c] text-xs flex items-start gap-2">
                 <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
                 <span>{successMsg}</span>
               </div>
@@ -232,7 +232,7 @@ export function CreateAccountView() {
                       className={`p-3 rounded-sm border text-left transition-all cursor-pointer ${
                         role === r.id
                           ? 'bg-[#193d2c] text-white border-[#193d2c] shadow-xs'
-                          : 'bg-[#fcfbf9] text-[#131715] border-[#d5cebf] hover:bg-[#f5f2eb]'
+                          : 'bg-[#fcfbf9] text-[#131715] border-[#d5cebf] hover:bg-[#ffffff]'
                       }`}
                     >
                       <span className="block text-xs font-bold mb-0.5">
@@ -297,7 +297,7 @@ export function CreateAccountView() {
                   id="admin-create-account-submit"
                   type="submit"
                   disabled={isSubmitting || isLoading}
-                  className="w-full py-2.5 px-4 bg-[#193d2c] hover:bg-[#122e21] text-white text-sm font-semibold rounded-sm shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                  className="w-full py-2.5 px-4 bg-[#193d2c] hover:bg-[#112a1f] text-white text-sm font-semibold rounded-sm shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                 >
                   {isSubmitting ? (
                     <span>Creating Account...</span>
@@ -315,7 +315,7 @@ export function CreateAccountView() {
 
         {/* Right Column: Role Permissions & Guidelines */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-[#fbfaf7] border border-[#e5e0d5] rounded-md p-5 space-y-4">
+          <div className="bg-[#ffffff] border border-[#e5e0d5] rounded-md p-5 space-y-4">
             <h3 className="font-serif text-sm font-bold text-[#131715] flex items-center gap-2">
               <Shield size={16} className="text-[#193d2c]" />
               <span>Role Permissions Matrix</span>
@@ -376,7 +376,7 @@ export function CreateAccountView() {
                 className={`px-2.5 py-1 text-xs font-semibold rounded-sm border transition-colors cursor-pointer capitalize ${
                   roleFilter === f
                     ? 'bg-[#193d2c] text-white border-[#193d2c]'
-                    : 'bg-[#fcfbf9] text-[#59635e] border-[#d5cebf] hover:bg-[#f5f2eb]'
+                    : 'bg-[#fcfbf9] text-[#59635e] border-[#d5cebf] hover:bg-[#ffffff]'
                 }`}
               >
                 {f}
@@ -388,7 +388,7 @@ export function CreateAccountView() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-[#fbfaf7] border-b border-[#e5e0d5] text-[#59635e] font-semibold">
+              <tr className="bg-[#ffffff] border-b border-[#e5e0d5] text-[#59635e] font-semibold">
                 <th className="py-3 px-4">Name</th>
                 <th className="py-3 px-4">Email</th>
                 <th className="py-3 px-4">Role</th>
@@ -399,7 +399,7 @@ export function CreateAccountView() {
               {filteredProfiles.map((p) => {
                 const isCurrent = p.id === profile?.id;
                 return (
-                  <tr key={p.id} className="hover:bg-[#fbfaf7]/60 transition-colors">
+                  <tr key={p.id} className="hover:bg-[#ffffff]/60 transition-colors">
                     <td className="py-3 px-4 font-semibold text-[#131715]">
                       <div className="flex items-center gap-2">
                         <span>{p.name}</span>
@@ -420,7 +420,7 @@ export function CreateAccountView() {
                             ? 'bg-[#193d2c] text-white'
                             : p.role === 'incharge'
                             ? 'bg-[#2b4c7e] text-white'
-                            : 'bg-[#f5f2eb] border border-[#d5cebf] text-[#131715]'
+                            : 'bg-[#ffffff] border border-[#d5cebf] text-[#131715]'
                         }`}
                       >
                         {p.role}

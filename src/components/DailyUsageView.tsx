@@ -45,7 +45,7 @@ export function DailyUsageView() {
 
         <button
           onClick={() => window.print()}
-          className="px-3 py-1.5 text-xs text-[#131715] hover:bg-[#f5f2eb] border border-[#e5e0d5] bg-white rounded-sm flex items-center gap-1.5 self-start sm:self-auto shadow-xs cursor-pointer transition-colors"
+          className="px-3 py-1.5 text-xs text-[#131715] hover:bg-[#ffffff] border border-[#e5e0d5] bg-white rounded-sm flex items-center gap-1.5 self-start sm:self-auto shadow-xs cursor-pointer transition-colors"
         >
           <Printer size={14} />
           <span>Print Sheet</span>
@@ -65,7 +65,7 @@ export function DailyUsageView() {
             className={`px-2.5 py-1 text-xs rounded-sm border transition-colors cursor-pointer ${
               selectedDate === todayStr
                 ? 'bg-[#193d2c] text-[#f7f9f7] border-[#193d2c] font-semibold'
-                : 'bg-white border-[#e5e0d5] text-[#131715] hover:bg-[#f5f2eb]'
+                : 'bg-white border-[#e5e0d5] text-[#131715] hover:bg-[#ffffff]'
             }`}
           >
             Today
@@ -75,7 +75,7 @@ export function DailyUsageView() {
             className={`px-2.5 py-1 text-xs rounded-sm border transition-colors cursor-pointer ${
               selectedDate === yesterdayStr
                 ? 'bg-[#193d2c] text-[#f7f9f7] border-[#193d2c] font-semibold'
-                : 'bg-white border-[#e5e0d5] text-[#131715] hover:bg-[#f5f2eb]'
+                : 'bg-white border-[#e5e0d5] text-[#131715] hover:bg-[#ffffff]'
             }`}
           >
             Yesterday
@@ -129,7 +129,7 @@ export function DailyUsageView() {
                         <span
                           className={`text-[11px] px-2 py-0.5 rounded-sm capitalize font-medium ${
                             isProv
-                              ? 'bg-[#f5f2eb] text-[#131715] border border-[#e5e0d5]'
+                              ? 'bg-[#ffffff] text-[#131715] border border-[#e5e0d5]'
                               : 'bg-[#e6f0ea] text-[#193d2c] border border-[#193d2c]/20'
                           }`}
                         >
@@ -153,7 +153,7 @@ export function DailyUsageView() {
                 })}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-[#131715] font-mono-fig font-bold bg-[#f5f2eb]">
+                <tr className="border-t-2 border-[#131715] font-mono-fig font-bold bg-[#ffffff]">
                   <td colSpan={4} className="py-3 px-3 text-right text-xs uppercase tracking-wider text-[#131715]">
                     Total Day Consumption Expenditure:
                   </td>
