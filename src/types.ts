@@ -106,9 +106,7 @@ export interface StockAdjustmentRequestPayload {
 
 export type PageId =
   | 'dashboard'
-  
-  
-  
+  | 'purchases'
   | 'ingredients'
   | 'log-purchase'
   | 'log-usage'

@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   History,
   Database,
+  Receipt,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { IngredientNameDisplay } from '../lib/ingredientDisplay';
@@ -298,13 +299,23 @@ export function DashboardView() {
               Recent Register Entries (Across All Dates)
             </h3>
           </div>
-          <button
-            onClick={() => navigateTo('daily-usage')}
-            className="text-xs text-[#193d2c] font-bold hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <span>Daily Breakdown</span>
-            <ArrowRight size={12} />
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => navigateTo('purchases')}
+              className="text-xs text-[#193d2c] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <Receipt size={12} />
+              <span>Purchase Register</span>
+            </button>
+            <span className="text-[#e5e0d5]">&middot;</span>
+            <button
+              onClick={() => navigateTo('daily-usage')}
+              className="text-xs text-[#193d2c] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span>Daily Breakdown</span>
+              <ArrowRight size={12} />
+            </button>
+          </div>
         </div>
 
         {recentEntries.length === 0 ? (
@@ -331,18 +342,39 @@ export function DashboardView() {
                   const isUsage = t.txn_type === 'usage';
                   const isPurchase = t.txn_type === 'purchase';
 
-                  const dateFormatted = new Date(t.created_at || t.usage_date).toLocaleDateString(
-                    'en-IN',
-                    { day: '2-digit', month: 'short' }
-                  );
+                  // Prioritize usage_date (the actual date the purchase/usage was made)
+                  const rawTxnDate = t.usage_date || (t.created_at ? t.created_at.split('T')[0] : '');
+                  const dateParts = rawTxnDate ? rawTxnDate.split('-') : [];
+                  const dateFormatted = dateParts.length === 3
+                    ? new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2])).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                      })
+                    : (rawTxnDate ? new Date(rawTxnDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—');
+
+                  // Check if logged date is different from the purchase/usage date
+                  const rawLoggedDate = t.created_at ? t.created_at.split('T')[0] : '';
+                  const loggedParts = rawLoggedDate ? rawLoggedDate.split('-') : [];
+                  const loggedFormatted = loggedParts.length === 3
+                    ? new Date(Number(loggedParts[0]), Number(loggedParts[1]) - 1, Number(loggedParts[2])).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                      })
+                    : '';
+                  const isBackdated = rawLoggedDate && rawTxnDate && rawLoggedDate !== rawTxnDate;
 
                   return (
                     <tr
                       key={t.id}
                       className="hover:bg-[#193d2c]/5 transition-colors font-mono-fig text-[#131715]"
                     >
-                      <td className="py-2.5 px-3 whitespace-nowrap text-[#59635e]">
-                        {dateFormatted}
+                      <td className="py-2.5 px-3 whitespace-nowrap text-[#131715]">
+                        <div className="font-semibold text-xs text-[#131715]">{dateFormatted}</div>
+                        {isBackdated && (
+                          <div className="text-[10px] text-[#8b948f] font-sans" title={`Logged into system on ${loggedFormatted}`}>
+                            Logged: {loggedFormatted}
+                          </div>
+                        )}
                       </td>
                       <td className="py-2.5 px-3 font-sans font-medium whitespace-nowrap">
                         <IngredientNameDisplay

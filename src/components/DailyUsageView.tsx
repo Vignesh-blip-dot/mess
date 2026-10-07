@@ -13,7 +13,11 @@ export function DailyUsageView() {
   const [selectedDate, setSelectedDate] = useState<string>(yesterdayStr);
 
   const usageEntries = transactions.filter(
-    (t) => t.txn_type === 'usage' && (t.usage_date === selectedDate || t.created_at.startsWith(selectedDate))
+    (t) =>
+      t.txn_type === 'usage' &&
+      (t.usage_date
+        ? t.usage_date === selectedDate
+        : t.created_at.startsWith(selectedDate))
   );
 
   const totalCost = usageEntries.reduce((sum, t) => sum + (t.total_cost || 0), 0);

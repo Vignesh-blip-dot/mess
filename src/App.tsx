@@ -5,6 +5,7 @@ import { Navigation } from './components/Navigation';
 import { SignInPage } from './components/SignInPage';
 import { DashboardView } from './components/DashboardView';
 import { IngredientsView } from './components/IngredientsView';
+import { PurchasesView } from './components/PurchasesView';
 import { LogPurchaseView } from './components/LogPurchaseView';
 import { LogUsageView } from './components/LogUsageView';
 import { StockAdjustmentView } from './components/StockAdjustmentView';
@@ -38,6 +39,8 @@ function MainAppShell() {
     switch (currentPage) {
       case 'dashboard':
         return <DashboardView key="dashboard" />;
+      case 'purchases':
+        return <PurchasesView key="purchases" />;
       case 'ingredients':
         return <IngredientsView key="ingredients" />;
       case 'log-purchase':

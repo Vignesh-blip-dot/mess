@@ -131,7 +131,7 @@ export function LogPurchaseView() {
                 htmlFor="purchase-vendor"
                 className="block text-xs font-semibold text-[#59635e] uppercase tracking-wider mb-1"
               >
-                Vendor / Supplier (Optional)
+                Vendor (Optional)
               </label>
               <input
                 type="text"

@@ -20,6 +20,7 @@ import {
   BookOpen,
   Database,
   RefreshCw,
+  Receipt,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { PageId } from '../types';
@@ -36,6 +37,7 @@ interface NavItemDef {
 const ALL_NAV_ITEMS: NavItemDef[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'incharge', 'coordinator'] },
   { id: 'ingredients', label: 'Ingredients & Stock', icon: Package, roles: ['admin', 'incharge', 'coordinator'] },
+  { id: 'purchases', label: 'Purchase Register', icon: Receipt, roles: ['admin', 'incharge', 'coordinator'] },
   { id: 'log-purchase', label: 'Log a Purchase', icon: PlusCircle, roles: ['admin', 'coordinator'], needs: 'stock' },
   { id: 'log-usage', label: 'Log Meal Usage', icon: MinusCircle, roles: ['admin', 'coordinator'], needs: 'stock' },
   { id: 'adjustment', label: 'Stock Adjustment', icon: Sliders, roles: ['admin', 'coordinator'], needs: 'stock' },
