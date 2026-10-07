@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { ShieldCheck, Search, Filter } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { formatIngredientName } from '../lib/ingredientDisplay';
 
 export function AuditLogView() {
   const { auditLogs, ingredients } = useApp();
@@ -130,7 +131,7 @@ export function AuditLogView() {
                       const jsonStr = log.reason.substring(8);
                       const data = JSON.parse(jsonStr);
                       const ingredient = ingredients.find(i => i.ingredient_id === data.ingredientId);
-                      const ingName = ingredient ? ingredient.name : 'Unknown Item';
+                      const ingName = ingredient ? formatIngredientName(ingredient.name, ingredient.name_telugu) : 'Unknown Item';
                       const sign = data.quantityChange > 0 ? '+' : '';
                       const remarksStr = data.remarks ? ` - ${data.remarks}` : '';
                       
@@ -164,7 +165,7 @@ export function AuditLogView() {
                      try {
                        const data = JSON.parse(log.reason || '{}');
                        const ingredient = ingredients.find(i => i.ingredient_id === data.ingredientId);
-                       const ingName = ingredient ? ingredient.name : 'Unknown Item';
+                       const ingName = ingredient ? formatIngredientName(ingredient.name, ingredient.name_telugu) : 'Unknown Item';
                        const sign = data.quantityChange > 0 ? '+' : '';
                        const remarksStr = data.remarks ? ` - ${data.remarks}` : '';
                        
@@ -184,7 +185,7 @@ export function AuditLogView() {
                   } else if (log.action === 'insert' && log.entity_name === 'stock_transactions' && log.after_value) {
                     const data = log.after_value;
                     const ingredient = ingredients.find(i => i.ingredient_id === data.ingredient_id);
-                    const ingName = ingredient ? ingredient.name : 'Unknown Item';
+                    const ingName = ingredient ? formatIngredientName(ingredient.name, ingredient.name_telugu) : 'Unknown Item';
                     const unit = ingredient?.unit || '';
                     if (data.txn_type === 'purchase') {
                       displayAction = 'LOG_PURCHASE';
@@ -200,7 +201,7 @@ export function AuditLogView() {
                     }
                   } else if (log.action === 'update' && log.entity_name === 'ingredients' && log.after_value) {
                     displayAction = 'UPDATE_INGREDIENT';
-                    const ingName = log.after_value.name || 'Unknown Item';
+                    const ingName = formatIngredientName(log.after_value.name, log.after_value.name_telugu || log.after_value.telugu_name);
                     renderedReason = <span className="text-[#131715]">Updated ingredient "{ingName}" details</span>;
                   } else if (log.action === 'insert' && log.entity_name === 'daily_headcount' && log.after_value) {
                     displayAction = 'LOG_HEADCOUNT';

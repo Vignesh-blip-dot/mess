@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { DailyExpenditureSummary } from '../types';
+import { IngredientNameDisplay } from '../lib/ingredientDisplay';
 
 export function MonthlyReportView() {
   const {
@@ -65,6 +66,7 @@ export function MonthlyReportView() {
   interface IngredientMonthLine {
     id: string;
     name: string;
+    name_telugu?: string | null;
     category: string;
     unit: string;
     opening: number;
@@ -87,6 +89,7 @@ export function MonthlyReportView() {
       perIngredient[id] = {
         id,
         name: ing?.name || t.ingredients?.name || 'Unknown',
+        name_telugu: ing?.name_telugu || t.ingredients?.name_telugu || null,
         category: ing?.category || t.ingredients?.category || 'provisions',
         unit: ing?.unit || t.ingredients?.unit || 'kg',
         opening: 0,
@@ -360,7 +363,9 @@ export function MonthlyReportView() {
               <tbody className="divide-y divide-[#e5e0d5] font-mono-fig">
                 {provisionsRows.map((r) => (
                   <tr key={r.id} className="hover:bg-[#193d2c]/5 transition-colors">
-                    <td className="py-2 px-2.5 font-sans font-medium text-[#131715]">{r.name}</td>
+                    <td className="py-2 px-2.5 font-sans font-medium text-[#131715]">
+                      <IngredientNameDisplay name={r.name} nameTelugu={r.name_telugu} />
+                    </td>
                     <td className="py-2 px-2.5 text-right text-[#59635e]">{formatQty(r.opening, r.unit)}</td>
                     <td className="py-2 px-2.5 text-right text-[#193d2c]">+{formatQty(r.purchasedQty, r.unit)}</td>
                     <td className="py-2 px-2.5 text-right">{formatCurrency(r.purchasedCost)}</td>
@@ -403,7 +408,9 @@ export function MonthlyReportView() {
               <tbody className="divide-y divide-[#e5e0d5] font-mono-fig">
                 {perishableRows.map((r) => (
                   <tr key={r.id} className="hover:bg-[#193d2c]/5 transition-colors">
-                    <td className="py-2 px-2.5 font-sans font-medium text-[#131715]">{r.name}</td>
+                    <td className="py-2 px-2.5 font-sans font-medium text-[#131715]">
+                      <IngredientNameDisplay name={r.name} nameTelugu={r.name_telugu} />
+                    </td>
                     <td className="py-2 px-2.5 text-right text-[#59635e]">{formatQty(r.opening, r.unit)}</td>
                     <td className="py-2 px-2.5 text-right text-[#193d2c]">+{formatQty(r.purchasedQty, r.unit)}</td>
                     <td className="py-2 px-2.5 text-right">{formatCurrency(r.purchasedCost)}</td>
@@ -443,7 +450,15 @@ export function MonthlyReportView() {
                 {monthAdjustments.map((a) => (
                   <tr key={a.id} className="hover:bg-[#193d2c]/5 transition-colors">
                     <td className="py-2 px-2.5 text-[#59635e]">{a.usage_date}</td>
-                    <td className="py-2 px-2.5 font-sans font-medium text-[#131715]">{a.ingredients?.name}</td>
+                    <td className="py-2 px-2.5 font-sans font-medium text-[#131715]">
+                      <IngredientNameDisplay
+                        name={a.ingredients?.name}
+                        nameTelugu={
+                          a.ingredients?.name_telugu ||
+                          ingredients.find((i) => i.ingredient_id === a.ingredient_id)?.name_telugu
+                        }
+                      />
+                    </td>
                     <td className="py-2 px-2.5 text-right font-bold text-[#942426]">
                       {a.quantity > 0 ? `+${a.quantity}` : a.quantity} {a.ingredients?.unit}
                     </td>

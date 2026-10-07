@@ -12,6 +12,7 @@ import {
   Database,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { IngredientNameDisplay } from '../lib/ingredientDisplay';
 
 export function DashboardView() {
   const {
@@ -344,7 +345,13 @@ export function DashboardView() {
                         {dateFormatted}
                       </td>
                       <td className="py-2.5 px-3 font-sans font-medium whitespace-nowrap">
-                        {t.ingredients?.name || 'Unknown'}
+                        <IngredientNameDisplay
+                          name={t.ingredients?.name}
+                          nameTelugu={
+                            t.ingredients?.name_telugu ||
+                            ingredients.find((i) => i.ingredient_id === t.ingredient_id)?.name_telugu
+                          }
+                        />
                       </td>
                       <td className="py-2.5 px-3 whitespace-nowrap text-[12px] text-[#59635e]">
                         {t.created_by_name || 'Staff User'}

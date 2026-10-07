@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { CalendarDays, Calendar, Printer, Utensils } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { IngredientNameDisplay } from '../lib/ingredientDisplay';
 
 export function DailyUsageView() {
-  const { transactions } = useApp();
+  const { transactions, ingredients } = useApp();
 
   const todayStr = new Date().toISOString().split('T')[0];
   const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
@@ -123,7 +124,13 @@ export function DailyUsageView() {
                       className="hover:bg-[#193d2c]/5 transition-colors font-mono-fig text-[#131715]"
                     >
                       <td className="py-2.5 px-3 font-sans font-medium">
-                        {t.ingredients?.name || 'Unknown'}
+                        <IngredientNameDisplay
+                          name={t.ingredients?.name}
+                          nameTelugu={
+                            t.ingredients?.name_telugu ||
+                            ingredients.find((i) => i.ingredient_id === t.ingredient_id)?.name_telugu
+                          }
+                        />
                       </td>
                       <td className="py-2.5 px-3 font-sans">
                         <span

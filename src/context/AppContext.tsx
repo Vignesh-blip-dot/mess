@@ -434,6 +434,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             ingredients: matchedIng
               ? {
                   name: matchedIng.name,
+                  name_telugu: matchedIng.name_telugu,
                   category: matchedIng.category,
                   unit: matchedIng.unit,
                 }
@@ -1198,6 +1199,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         created_by_name: profile?.name || 'Staff',
         ingredients: {
           name: ing.name,
+          name_telugu: ing.name_telugu,
           category: ing.category,
           unit: ing.unit,
         },
@@ -1311,7 +1313,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       updatedIngsMap.set(ingredientId, { ...ing, current_stock: newStock });
       
-      const itemMeal = (ing.category === 'perishable' ) ? null : (mealType || null);
+      const itemMeal = mealType || null;
 
       const newTxn: StockTransaction = {
         id: `txn-${now++}`,
@@ -1328,6 +1330,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         created_by_name: profile?.name || 'Staff',
         ingredients: {
           name: ing.name,
+          name_telugu: ing.name_telugu,
           category: ing.category,
           unit: ing.unit,
         },
@@ -1461,6 +1464,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       created_by_name: profile?.name || 'Staff',
       ingredients: {
         name: ing.name,
+        name_telugu: ing.name_telugu,
         category: ing.category,
         unit: ing.unit,
       },

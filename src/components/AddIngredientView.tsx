@@ -111,6 +111,16 @@ export function AddIngredientView() {
                 className="w-full px-3 py-2 text-sm bg-white border border-[#e5e0d5] rounded-sm text-[#131715] focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
               />
             </div>
+
+            {name.trim() && (
+              <div className="sm:col-span-2 px-3 py-2 bg-[#f4f7f5] border border-[#e5e0d5] rounded-sm text-xs flex items-center gap-2">
+                <span className="text-[#59635e] font-semibold">Display Preview:</span>
+                <span className="font-semibold text-[#131715]">{name.trim()}</span>
+                {nameTelugu.trim() && (
+                  <span className="text-[#59635e]">({nameTelugu.trim()})</span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

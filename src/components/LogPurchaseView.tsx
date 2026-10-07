@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { PlusCircle, Calculator, AlertCircle, Trash2, Plus } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { SearchableIngredientSelect } from './SearchableIngredientSelect';
 
 export function LogPurchaseView() {
   const {
@@ -158,19 +159,13 @@ export function LogPurchaseView() {
                 <div key={row.id} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-start bg-[#fcfbf9] sm:bg-transparent p-3 sm:p-0 border sm:border-0 border-[#e5e0d5] rounded-sm relative group">
                   <div className="sm:col-span-5">
                     <label className="block sm:hidden text-xs font-semibold text-[#59635e] uppercase tracking-wider mb-1">Ingredient</label>
-                    <select
+                    <SearchableIngredientSelect
+                      ingredients={activeIngredients}
                       value={row.ingredientId}
                       required
-                      onChange={(e) => updateRow(row.id, 'ingredientId', e.target.value)}
-                      className="w-full px-3 py-2 text-sm bg-white border border-[#e5e0d5] rounded-sm text-[#131715] focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
-                    >
-                      <option value="">Select ingredient...</option>
-                      {activeIngredients.map((item) => (
-                        <option key={item.ingredient_id} value={item.ingredient_id}>
-                          {item.name} ({item.unit}) &middot; Current: {item.current_stock}
-                        </option>
-                      ))}
-                    </select>
+                      placeholder="Search or select ingredient..."
+                      onChange={(id) => updateRow(row.id, 'ingredientId', id)}
+                    />
                   </div>
                   
                   <div className="sm:col-span-3">

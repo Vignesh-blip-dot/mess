@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { MinusCircle, AlertCircle, Trash2, Plus } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { MealType } from '../types';
+import { SearchableIngredientSelect } from './SearchableIngredientSelect';
 
 export function LogUsageView() {
   const {
@@ -32,12 +33,6 @@ export function LogUsageView() {
     [ingredients]
   );
 
-  // Check if any provision is selected, to require meal type
-  const hasProvisions = rows.some((r) => {
-    const ing = eligibleIngredients.find((i) => i.ingredient_id === r.ingredientId);
-    return ing?.category === 'provisions';
-  });
-
   const addRow = () => {
     setRows([...rows, { id: `row-${Date.now()}`, ingredientId: '', quantity: '' }]);
   };
@@ -54,11 +49,6 @@ export function LogUsageView() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (hasProvisions && !globalMealType) {
-      showToast('Meal Type is required when logging provisions (non-perishables).', true);
-      return;
-    }
 
     const itemsToLog = [];
     for (const row of rows) {
@@ -153,21 +143,20 @@ export function LogUsageView() {
             </div>
             
             {/* Meal selector */}
-            <div className={hasProvisions ? '' : 'opacity-50'}>
+            <div>
               <label
                 htmlFor="usage-meal"
-                className="block text-xs font-semibold text-[#193d2c] uppercase tracking-wider mb-1 flex items-center justify-between"
+                className="block text-xs font-semibold text-[#59635e] uppercase tracking-wider mb-1"
               >
-                <span>Meal Type {hasProvisions ? '(Required for selected provisions)' : '(Not required for perishables)'}</span>
+                Meal Type (Optional)
               </label>
               <select
                 id="usage-meal"
                 value={globalMealType}
-                required={hasProvisions}
                 onChange={(e) => setGlobalMealType(e.target.value as MealType)}
-                className="w-full px-3 py-2 text-sm bg-white border border-[#193d2c] rounded-sm text-[#131715] focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
+                className="w-full px-3 py-2 text-sm bg-white border border-[#e5e0d5] rounded-sm text-[#131715] focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
               >
-                <option value="">Select meal...</option>
+                <option value="">General / None (Optional)</option>
                 <option value="breakfast">Breakfast</option>
                 <option value="lunch">Lunch</option>
                 <option value="dinner">Dinner</option>
@@ -191,19 +180,14 @@ export function LogUsageView() {
                 <div key={row.id} className={`grid grid-cols-1 sm:grid-cols-12 gap-3 items-start p-3 sm:p-0 rounded-sm relative group ${isOverStock ? 'bg-[#faeaea] border border-[#942426]/30' : 'bg-[#fcfbf9] sm:bg-transparent border border-[#e5e0d5] sm:border-0'}`}>
                   <div className="sm:col-span-7">
                     <label className="block sm:hidden text-xs font-semibold text-[#59635e] uppercase tracking-wider mb-1">Ingredient</label>
-                    <select
+                    <SearchableIngredientSelect
+                      ingredients={eligibleIngredients}
                       value={row.ingredientId}
                       required
-                      onChange={(e) => updateRow(row.id, 'ingredientId', e.target.value)}
-                      className={`w-full px-3 py-2 text-sm bg-white border rounded-sm text-[#131715] focus:outline-none focus:ring-1 focus:ring-[#193d2c] ${isOverStock ? 'border-[#942426]/50' : 'border-[#e5e0d5]'}`}
-                    >
-                      <option value="">Select ingredient...</option>
-                      {eligibleIngredients.map((item) => (
-                        <option key={item.ingredient_id} value={item.ingredient_id}>
-                          {item.name} ({item.unit}) &middot; Stock: {item.current_stock}
-                        </option>
-                      ))}
-                    </select>
+                      placeholder="Search or select ingredient..."
+                      isError={isOverStock}
+                      onChange={(id) => updateRow(row.id, 'ingredientId', id)}
+                    />
                   </div>
                   
                   <div className="sm:col-span-4">

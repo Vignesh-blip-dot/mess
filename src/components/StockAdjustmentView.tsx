@@ -149,16 +149,18 @@ export function StockAdjustmentView() {
                   }`}
                 >
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold text-sm">{ing.name}</span>
+                    <span className="font-semibold text-sm flex items-baseline flex-wrap gap-x-1">
+                      <span>{ing.name}</span>
+                      {ing.name_telugu && (
+                        <span className={`text-xs ${ingredientId === ing.ingredient_id ? 'text-[#e6f0ea]' : 'text-[#59635e]'}`}>
+                          ({ing.name_telugu})
+                        </span>
+                      )}
+                    </span>
                     <span className={`text-xs font-mono-fig ${ingredientId === ing.ingredient_id ? 'text-[#e6f0ea]' : 'text-[#59635e]'}`}>
                       {ing.current_stock} {ing.unit}
                     </span>
                   </div>
-                  {ing.name_telugu && (
-                    <div className={`text-[10px] mt-0.5 ${ingredientId === ing.ingredient_id ? 'text-[#e6f0ea]/80' : 'text-[#59635e]'}`}>
-                      {ing.name_telugu}
-                    </div>
-                  )}
                 </button>
               ))
             )}
@@ -189,7 +191,14 @@ export function StockAdjustmentView() {
                 {/* Header */}
                 <div className="p-5 border-b border-[#e5e0d5] bg-[#193d2c] text-white flex justify-between items-center">
                   <div>
-                    <h3 className="text-lg font-serif font-bold">{selectedIng.name}</h3>
+                    <h3 className="text-lg font-serif font-bold flex items-baseline flex-wrap gap-x-1.5">
+                      <span>{selectedIng.name}</span>
+                      {selectedIng.name_telugu && (
+                        <span className="text-sm font-sans font-normal text-[#e6f0ea]">
+                          ({selectedIng.name_telugu})
+                        </span>
+                      )}
+                    </h3>
                     <p className="text-xs text-[#e6f0ea] mt-1 tracking-wider uppercase">Adjustment Ticket</p>
                   </div>
                   <div className="text-right">
@@ -388,7 +397,12 @@ export function StockAdjustmentView() {
             <div className="bg-[#fcfafa] border border-[#e5e0d5] p-4 rounded-sm space-y-2 text-sm font-mono-fig text-[#131715]">
               <div className="flex justify-between border-b border-[#e5e0d5] pb-2">
                 <span className="text-[#59635e] font-sans text-xs">Item</span>
-                <span className="font-bold">{selectedIng.name}</span>
+                <span className="font-bold flex items-baseline flex-wrap gap-x-1">
+                  <span>{selectedIng.name}</span>
+                  {selectedIng.name_telugu && (
+                    <span className="text-xs font-normal text-[#59635e]">({selectedIng.name_telugu})</span>
+                  )}
+                </span>
               </div>
               <div className="flex justify-between border-b border-[#e5e0d5] pb-2 pt-1">
                 <span className="text-[#59635e] font-sans text-xs">Correction</span>

@@ -44,6 +44,7 @@ export interface StockTransaction {
   created_by_name?: string;
   ingredients?: {
     name: string;
+    name_telugu?: string | null;
     category: IngredientCategory;
     unit: string;
   };

@@ -38,7 +38,14 @@ export function AdjustmentRequestsView() {
               <div key={req.reqId} className="bg-white border border-[#e5e0d5] rounded-sm p-5 shadow-sm space-y-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-semibold text-[#131715]">{ing?.name || 'Unknown Ingredient'}</h3>
+                    <h3 className="font-semibold text-[#131715] flex items-baseline flex-wrap gap-x-1.5">
+                      <span>{ing?.name || 'Unknown Ingredient'}</span>
+                      {ing?.name_telugu && (
+                        <span className="text-xs font-normal text-[#59635e]">
+                          ({ing.name_telugu})
+                        </span>
+                      )}
+                    </h3>
                     <p className="text-xs text-[#59635e] mt-1">Requested by {req.created_by_name} on {new Date(req.created_at).toLocaleString()}</p>
                   </div>
                   <div className="flex items-center gap-2">

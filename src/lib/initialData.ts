@@ -190,7 +190,7 @@ export function getInitialTransactions(): StockTransaction[] {
       created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
       created_by: 'usr-coord-1',
       created_by_name: 'Karthik Reddy',
-      ingredients: { name: 'Sona Masoori Rice', category: 'provisions', unit: 'kg' },
+      ingredients: { name: 'Sona Masoori Rice', name_telugu: 'సోనా మసూరి బియ్యం', category: 'provisions', unit: 'kg' },
     },
     {
       id: 'txn-2',
@@ -205,7 +205,7 @@ export function getInitialTransactions(): StockTransaction[] {
       created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
       created_by: 'usr-coord-1',
       created_by_name: 'Karthik Reddy',
-      ingredients: { name: 'Toor Dal (Pappu)', category: 'provisions', unit: 'kg' },
+      ingredients: { name: 'Toor Dal (Pappu)', name_telugu: 'కందిపప్పు', category: 'provisions', unit: 'kg' },
     },
     {
       id: 'txn-3',
@@ -220,7 +220,7 @@ export function getInitialTransactions(): StockTransaction[] {
       created_at: new Date(Date.now() - 3600000 * 5).toISOString(),
       created_by: 'usr-coord-1',
       created_by_name: 'Karthik Reddy',
-      ingredients: { name: 'Fresh Toned Milk', category: 'perishable', unit: 'litre' },
+      ingredients: { name: 'Fresh Toned Milk', name_telugu: 'పాలు', category: 'perishable', unit: 'litre' },
     },
     {
       id: 'txn-4',
@@ -235,7 +235,7 @@ export function getInitialTransactions(): StockTransaction[] {
       created_at: new Date(Date.now() - 3600000 * 6).toISOString(),
       created_by: 'usr-coord-1',
       created_by_name: 'Karthik Reddy',
-      ingredients: { name: 'Fresh Tomatoes', category: 'perishable', unit: 'kg' },
+      ingredients: { name: 'Fresh Tomatoes', name_telugu: 'టమాటాలు', category: 'perishable', unit: 'kg' },
     },
     {
       id: 'txn-5',
@@ -250,7 +250,7 @@ export function getInitialTransactions(): StockTransaction[] {
       created_at: new Date(Date.now() - 86400000).toISOString(),
       created_by: 'usr-admin-1',
       created_by_name: 'Vignesh Rao',
-      ingredients: { name: 'Refined Sunflower Oil', category: 'provisions', unit: 'litre' },
+      ingredients: { name: 'Refined Sunflower Oil', name_telugu: 'సన్‌ఫ్లవర్ ఆయిల్', category: 'provisions', unit: 'litre' },
     },
     {
       id: 'txn-6',
@@ -265,7 +265,7 @@ export function getInitialTransactions(): StockTransaction[] {
       created_at: new Date(Date.now() - 86400000 * 1.5).toISOString(),
       created_by: 'usr-admin-1',
       created_by_name: 'Vignesh Rao',
-      ingredients: { name: 'Sona Masoori Rice', category: 'provisions', unit: 'kg' },
+      ingredients: { name: 'Sona Masoori Rice', name_telugu: 'సోనా మసూరి బియ్యం', category: 'provisions', unit: 'kg' },
     },
   ];
 }
