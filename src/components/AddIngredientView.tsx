@@ -135,12 +135,17 @@ export function AddIngredientView() {
               <select
                 id="ing-cat"
                 value={category}
-                onChange={(e) => setCategory(e.target.value as import('../types').IngredientCategory)}
+                onChange={(e) => {
+                  const newCat = e.target.value as import('../types').IngredientCategory;
+                  setCategory(newCat);
+                  // Perishables default to Purchase Only (false); Provisions default to Meal Breakdown (true)
+                  setTracksUsage(newCat !== 'perishable');
+                }}
                 className="w-full px-3 py-2 text-sm bg-white border border-[#e5e0d5] rounded-sm text-[#131715] focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
               >
                 <option value="provisions">Provisions (Stocked)</option>
                 <option value="perishable">Perishable (Daily)</option>
-                </select>
+              </select>
             </div>
 
             {/* Unit */}
@@ -176,9 +181,14 @@ export function AddIngredientView() {
                 onChange={(e) => setTracksUsage(e.target.value === 'true')}
                 className="w-full px-3 py-2 text-sm bg-white border border-[#e5e0d5] rounded-sm text-[#131715] focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
               >
-                <option value="true">Yes — Meal Breakdown</option>
-                <option value="false">No — Purchase Only (Salt, Sugar)</option>
+                <option value="false">No — Purchase Only (Perishables, Salt, Sugar)</option>
+                <option value="true">Yes — Meal Breakdown (Provisions)</option>
               </select>
+              <span className="text-[11px] text-[#59635e] mt-1 block">
+                {category === 'perishable'
+                  ? 'Perishables default to Purchase Only (expense booked upon receipt).'
+                  : 'Provisions default to Meal Breakdown (expense booked upon usage).'}
+              </span>
             </div>
           </div>
 

@@ -344,7 +344,7 @@ export function IngredientsView() {
                         )}
                       </td>
                       {hasFullEditAccess && (
-                        <td className="py-2.5 px-3 text-right font-sans">
+                        <td className="py-2.5 px-3 text-right font-sans whitespace-nowrap">
                           <button
                             id={`toggle-active-${item.ingredient_id}`}
                             onClick={() => toggleIngredientActive(item.ingredient_id)}

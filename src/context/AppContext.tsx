@@ -101,6 +101,7 @@ interface AppContextType {
     tracks_usage: boolean;
   }) => Promise<boolean>;
   toggleIngredientActive: (ingredientId: string) => Promise<boolean>;
+  toggleIngredientTracksUsage: (ingredientId: string) => Promise<boolean>;
   setStudentHeadcount: (date: string, count: number | null) => Promise<boolean>;
   setGuestHeadcount: (date: string, count: number | null) => Promise<boolean>;
   finalizeMonth: (monthStart: string) => Promise<boolean>;
@@ -386,7 +387,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             name_telugu: telugu,
             category,
             unit,
-            tracks_usage: row.tracks_usage !== false,
+            tracks_usage:
+              row.tracks_usage !== undefined && row.tracks_usage !== null
+                ? row.tracks_usage === true
+                : category !== 'perishable',
             active: row.active !== false,
             current_stock: stock,
             current_price: price,
@@ -1162,6 +1166,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const auditLogsToAdd: any[] = [];
     
     let now = Date.now();
+    const batchCreatedAt = new Date().toISOString();
 
     for (const item of items) {
       const { ingredientId, quantity, totalCost } = item;
@@ -1171,14 +1176,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
 
-      // Weighted average cost update
+      // Weighted average cost update only if quantity is positive
       const currentStock = ing.current_stock;
       const currentVal = currentStock * ing.current_price;
-      const addedStock = quantity;
+      const addedStock = quantity || 0;
       const addedVal = totalCost;
       const updatedStock = Math.round((currentStock + addedStock) * 100) / 100;
       const updatedPrice =
-        updatedStock > 0
+        addedStock > 0 && updatedStock > 0
           ? Math.round(((currentVal + addedVal) / updatedStock) * 100) / 100
           : ing.current_price;
 
@@ -1194,7 +1199,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         vendor: vendor || null,
         meal_type: null,
         reason: null,
-        created_at: new Date().toISOString(),
+        created_at: batchCreatedAt,
         created_by: profile?.id || 'usr-anon',
         created_by_name: profile?.name || 'Staff',
         ingredients: {
@@ -1213,6 +1218,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         total_cost: totalCost,
         usage_date: usageDate,
         vendor: vendor || null,
+        created_at: batchCreatedAt,
       };
       if (isValidUuid(profile?.id)) {
         txnPayload.created_by = profile.id;
@@ -1220,12 +1226,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       payloads.push(txnPayload);
 
       // Audit Log fallback prep
+      const qtyDesc = quantity > 0 ? `${quantity} ${ing.unit} ` : '';
       auditLogsToAdd.push({
         user_id: isValidUuid(profile?.id) ? profile.id : null,
         user_name: profile?.name || 'Staff',
         action: 'LOG_PURCHASE',
         entity_name: 'stock_transactions',
-        reason: `Purchased ${quantity} ${ing.unit} ${ing.name} for ₹${totalCost.toLocaleString('en-IN')}${vendor ? ` from ${vendor}` : ''}`,
+        reason: `Purchased ${qtyDesc}${ing.name} for ₹${totalCost.toLocaleString('en-IN')}${vendor ? ` from ${vendor}` : ''}`,
       });
     }
 
@@ -1727,6 +1734,43 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return true;
   };
 
+  const toggleIngredientTracksUsage = async (ingredientId: string) => {
+    const ing = ingredients.find((i) => i.ingredient_id === ingredientId);
+    if (!ing) return false;
+
+    const nextTracksUsage = !ing.tracks_usage;
+    setIngredients((prev) =>
+      prev.map((i) =>
+        i.ingredient_id === ingredientId ? { ...i, tracks_usage: nextTracksUsage } : i
+      )
+    );
+
+    try {
+      const client = getSupabase();
+      await client
+        .from('ingredients')
+        .update({ tracks_usage: nextTracksUsage })
+        .eq('id', ingredientId);
+
+      await safeInsertAuditLog({
+        user_id: isValidUuid(profile?.id) ? profile.id : null,
+        user_name: profile?.name || 'Staff',
+        action: nextTracksUsage ? 'ENABLE_MEAL_TRACKING' : 'SET_PURCHASE_ONLY',
+        entity_name: 'ingredients',
+        reason: `Changed ${ing.name} tracking to ${nextTracksUsage ? 'Meal Breakdown' : 'Purchase Only'}`,
+      });
+    } catch (err) {
+      console.warn('Toggle tracks_usage database error:', err);
+    }
+
+    showToast(
+      nextTracksUsage
+        ? `${ing.name} now tracks meal usage.`
+        : `${ing.name} set to Purchase Only (excluded from meal usage logging).`
+    );
+    return true;
+  };
+
   // 6. Set Student Headcount
   const setStudentHeadcount = async (date: string, count: number | null) => {
     const existing = dailySummaries[date] || {
@@ -2055,6 +2099,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         pendingAdjustmentRequests,
         addIngredient,
         toggleIngredientActive,
+        toggleIngredientTracksUsage,
         setStudentHeadcount,
         setGuestHeadcount,
         finalizeMonth,

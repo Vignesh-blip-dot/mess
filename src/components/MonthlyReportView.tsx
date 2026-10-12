@@ -136,7 +136,7 @@ export function MonthlyReportView() {
   // Calculate high-level summary metrics
   const totalProvisionsCost = provisionsRows.reduce((s, r) => s + r.usedCost, 0);
   const totalPerishablesCost = perishableRows.reduce((s, r) => s + r.usedCost, 0);
-  const totalExpenditure = totalProvisionsCost + totalPerishablesCost ;
+  const totalExpenditure = totalProvisionsCost + totalPerishablesCost;
 
   const totalPersonDays = dailyRows.reduce((s, r) => s + (r.total_people || 0), 0);
   const avgCostPerHead = totalPersonDays > 0 ? totalExpenditure / totalPersonDays : null;
@@ -421,6 +421,22 @@ export function MonthlyReportView() {
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-[#131715] font-bold bg-[#fbfaf7]">
+                  <td colSpan={3} className="py-2 px-2.5 font-sans text-xs uppercase tracking-wider">
+                    Total Perishables Used
+                  </td>
+                  <td className="py-2 px-2.5 text-right text-[#193d2c]">
+                    {formatCurrency(perishableRows.reduce((s, r) => s + r.purchasedCost, 0))}
+                  </td>
+                  <td></td>
+                  <td className="py-2 px-2.5 text-right text-base text-[#193d2c]">
+                    {formatCurrency(totalPerishablesCost)}
+                  </td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}
