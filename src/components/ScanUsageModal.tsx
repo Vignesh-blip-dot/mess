@@ -52,9 +52,9 @@ export function ScanUsageModal({
   const [step, setStep] = useState<'upload' | 'scanning' | 'review'>('upload');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [apiKey, setApiKey] = useState('');
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
-  const [tempApiKey, setTempApiKey] = useState('');
+  const [apiKey, setApiKey] = useState<string>(() => getGeminiApiKey());
+  const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(false);
+  const [tempApiKey, setTempApiKey] = useState<string>(() => getGeminiApiKey());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [scanStatusMessage, setScanStatusMessage] = useState('Initializing AI...');
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
@@ -151,7 +151,7 @@ export function ScanUsageModal({
       setErrorMessage('Please upload or capture a usage sheet image first.');
       return;
     }
-    const activeKey = apiKey.trim() || tempApiKey.trim();
+    const activeKey = (apiKey.trim() || tempApiKey.trim() || getGeminiApiKey()).trim();
     if (!activeKey) {
       setShowApiKeyInput(true);
       setErrorMessage('A Gemini API key is required to analyze the usage sheet.');
@@ -207,7 +207,7 @@ export function ScanUsageModal({
       return;
     }
 
-    const activeKey = apiKey.trim() || tempApiKey.trim();
+    const activeKey = (apiKey.trim() || tempApiKey.trim() || getGeminiApiKey()).trim();
     if (!activeKey) {
       setShowApiKeyInput(true);
       setErrorMessage('A Gemini API key is required to analyze the usage sheet.');
