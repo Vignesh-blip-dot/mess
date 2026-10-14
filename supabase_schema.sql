@@ -36,6 +36,8 @@ create table if not exists public.stock_transactions (
     ingredient_id uuid references public.ingredients(id) on delete cascade not null,
     txn_type text not null check (txn_type in ('purchase', 'usage', 'adjustment')),
     quantity numeric(12, 2) not null, -- Positive for purchase, negative for usage/loss
+    entered_quantity numeric(12, 2), -- Optional packaging quantity (e.g. 2 bags, 1 tin)
+    entered_unit text, -- Optional packaging unit name (e.g. '25 kg Bag', '15 kg Tin')
     total_cost numeric(12, 2) not null default 0.00,
     usage_date date not null default current_date,
     meal_type text check (meal_type in ('breakfast', 'lunch', 'dinner', 'snacks', null)),
@@ -44,6 +46,10 @@ create table if not exists public.stock_transactions (
     created_by uuid references public.profiles(id) on delete set null,
     created_at timestamptz default now()
 );
+
+-- Quick migration if stock_transactions already exists:
+-- alter table public.stock_transactions add column if not exists entered_quantity numeric(12, 2);
+-- alter table public.stock_transactions add column if not exists entered_unit text;
 
 -- 5. COORDINATOR TENURE ASSIGNMENTS
 create table if not exists public.coordinator_assignments (

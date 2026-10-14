@@ -1245,13 +1245,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ingredient_id: ingredientId,
         txn_type: 'purchase',
         quantity,
-        entered_quantity: enteredQuantity ?? null,
-        entered_unit: enteredUnit ?? null,
         total_cost: totalCost,
         usage_date: usageDate,
         vendor: vendor || null,
         created_at: batchCreatedAt,
       };
+      if (enteredQuantity !== undefined && enteredQuantity !== null) {
+        txnPayload.entered_quantity = enteredQuantity;
+      }
+      if (enteredUnit) {
+        txnPayload.entered_unit = enteredUnit;
+      }
       if (isValidUuid(profile?.id)) {
         txnPayload.created_by = profile.id;
       }
@@ -1288,7 +1292,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const client = getSupabase();
       
-      const { error: txnErr } = await client.from('stock_transactions').insert(payloads); 
+      let { error: txnErr } = await client.from('stock_transactions').insert(payloads); 
+      if (txnErr && (txnErr.message?.includes('entered_quantity') || txnErr.message?.includes('entered_unit') || txnErr.code === 'PGRST204')) {
+        // Fallback if Supabase table does not yet have entered_quantity / entered_unit columns
+        const cleanPayloads = payloads.map((p: any) => {
+          const { entered_quantity, entered_unit, ...rest } = p;
+          return rest;
+        });
+        const retryResult = await client.from('stock_transactions').insert(cleanPayloads);
+        txnErr = retryResult.error;
+      }
       if (txnErr) throw txnErr;
 
       // Update stock & unit price on ingredients table (safely handle schema variations)
@@ -1393,12 +1406,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ingredient_id: ingredientId,
         txn_type: 'usage',
         quantity: -Math.abs(quantity),
-        entered_quantity: enteredQuantity ? -Math.abs(enteredQuantity) : null,
-        entered_unit: enteredUnit ?? null,
         total_cost: itemCost,
         usage_date: usageDate,
         meal_type: itemMeal,
       };
+      if (enteredQuantity !== undefined && enteredQuantity !== null) {
+        txnPayload.entered_quantity = -Math.abs(enteredQuantity);
+      }
+      if (enteredUnit) {
+        txnPayload.entered_unit = enteredUnit;
+      }
       if (isValidUuid(profile?.id)) {
         txnPayload.created_by = profile.id;
       }
@@ -1430,7 +1447,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       const client = getSupabase();
       
-      const { error: txnErr } = await client.from('stock_transactions').insert(payloads); 
+      let { error: txnErr } = await client.from('stock_transactions').insert(payloads); 
+      if (txnErr && (txnErr.message?.includes('entered_quantity') || txnErr.message?.includes('entered_unit') || txnErr.code === 'PGRST204')) {
+        // Fallback if Supabase table does not yet have entered_quantity / entered_unit columns
+        const cleanPayloads = payloads.map((p: any) => {
+          const { entered_quantity, entered_unit, ...rest } = p;
+          return rest;
+        });
+        const retryResult = await client.from('stock_transactions').insert(cleanPayloads);
+        txnErr = retryResult.error;
+      }
       if (txnErr) throw txnErr;
 
       for (const item of items) {
