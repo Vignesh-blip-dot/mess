@@ -92,6 +92,25 @@ export function LogUsageView() {
       });
     }
 
+    const overStockItems = itemsToLog
+      .map((item) => {
+        const ing = eligibleIngredients.find((i) => i.ingredient_id === item.ingredientId);
+        if (ing && item.quantity > ing.current_stock) {
+          return `• ${ing.name}: Available ${ing.current_stock} ${ing.unit}, requested ${item.quantity} ${ing.unit}`;
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    if (overStockItems.length > 0) {
+      const confirmProceed = window.confirm(
+        `Stock Warning:\n\nThe following items exceed current recorded inventory:\n${overStockItems.join('\n')}\n\nRecording this usage will set their recorded stock to 0. Do you want to proceed?`
+      );
+      if (!confirmProceed) {
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     const success = await logUsageBatch({
       items: itemsToLog,

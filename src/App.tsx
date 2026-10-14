@@ -22,7 +22,7 @@ import { ToastNotification } from './components/ToastNotification';
 import { DatabaseStatusModal } from './components/DatabaseStatusModal';
 
 function MainAppShell() {
-  const { profile, currentPage } = useApp();
+  const { profile, currentPage, isSupabaseLive } = useApp();
 
   // Gate access behind authentication: users must sign in first
   if (!profile) {
@@ -75,12 +75,21 @@ function MainAppShell() {
       {/* Navigation (Desktop rail + Mobile top header & bottom nav) */}
       <Navigation />
 
-      {/* Main Content Area */}
-      <main className="flex-1 px-4 py-5 sm:px-8 sm:py-8 pb-28 lg:pb-12 max-w-6xl w-full mx-auto">
-        <AnimatePresence mode="wait">
-          {renderActiveView()}
-        </AnimatePresence>
-      </main>
+      <div className="flex-1 flex flex-col min-w-0">
+        {!isSupabaseLive && (
+          <div className="bg-[#fff9e6] border-b border-[#e5d5b0] px-4 py-2 text-center text-xs text-[#8a631e] font-medium flex items-center justify-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-[#d97706] animate-pulse"></span>
+            <span>Local Offline Mode — changes are saved safely to your device and will sync automatically when connected to Supabase.</span>
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        <main className="flex-1 px-4 py-5 sm:px-8 sm:py-8 pb-28 lg:pb-12 max-w-6xl w-full mx-auto">
+          <AnimatePresence mode="wait">
+            {renderActiveView()}
+          </AnimatePresence>
+        </main>
+      </div>
 
       {/* Modals & Overlays */}
       <QuickActionModal />

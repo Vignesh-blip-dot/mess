@@ -595,8 +595,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         .order('created_at', { ascending: false })
         .limit(100);
 
-      console.log('[DEBUG] audit_logs fetch:', { count: aud1?.length, err: aErr1 });
-
       if (!aErr1 && aud1) {
         auditRows = aud1;
         anySuccess = true;
@@ -607,7 +605,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           .select('*, profiles(name)')
           .order('created_at', { ascending: false })
           .limit(100);
-        console.log('[DEBUG] fallback audit_log fetch:', { count: aud2?.length, err: aErr2 });
         if (!aErr2 && aud2) {
           auditRows = aud2;
           anySuccess = true;
@@ -616,7 +613,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (auditRows) {
-        console.log('[DEBUG] first row of auditRows:', auditRows[0]);
         setAuditLogs(
           auditRows.map((row: any) => ({
             id: String(row.id),
@@ -704,27 +700,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // 4. Supabase Realtime Channel Subscription
+    // 4. Supabase Realtime Channel Subscription (Debounced to prevent reload storms on batch mutations)
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedRefresh = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        refreshDataFromSupabase();
+      }, 1500);
+    };
+
     const channel = supabase
       .channel('hostel_mess_ledger_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_transactions' }, () => {
-        refreshDataFromSupabase();
+        debouncedRefresh();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredients' }, () => {
-        refreshDataFromSupabase();
+        debouncedRefresh();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_summaries' }, () => {
-        refreshDataFromSupabase();
+        debouncedRefresh();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_logs' }, () => {
-        refreshDataFromSupabase();
+        debouncedRefresh();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_log' }, () => {
-        refreshDataFromSupabase();
+        debouncedRefresh();
       })
       .subscribe();
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       subscription.unsubscribe();
       supabase.removeChannel(channel);
     };
@@ -1332,7 +1337,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return true;
     } catch (e: any) {
       console.error(e);
-      showToast(e.message || 'Error recording purchases.', true);
+      showToast(e.message ? `Failed to save purchases: ${e.message}. Changes have been reverted.` : 'Error recording purchases. Changes have been reverted.', true);
       refreshDataFromSupabase();
       return false;
     }
@@ -1507,7 +1512,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return true;
     } catch (e: any) {
       console.error(e);
-      showToast(e.message || 'Error recording usage.', true);
+      showToast(e.message ? `Failed to save usage: ${e.message}. Changes have been reverted.` : 'Error recording usage. Changes have been reverted.', true);
       refreshDataFromSupabase();
       return false;
     }
