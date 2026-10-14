@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Plus, PackagePlus, ArrowLeft } from 'lucide-react';
+import { Plus, PackagePlus, ArrowLeft, Scale, Trash2, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { UnitConversion } from '../types';
 
 export function AddIngredientView() {
   const { addIngredient, showToast, navigateTo } = useApp();
@@ -12,6 +13,35 @@ export function AddIngredientView() {
   const [unit, setUnit] = useState('kg');
   const [tracksUsage, setTracksUsage] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Secondary packaging units state
+  const [conversions, setConversions] = useState<UnitConversion[]>([]);
+  const [convName, setConvName] = useState('');
+  const [convMult, setConvMult] = useState('');
+
+  const handleAddConv = () => {
+    const tName = convName.trim();
+    const m = parseFloat(convMult);
+    if (!tName || isNaN(m) || m <= 0) return;
+    if (conversions.some((c) => c.unit_name.toLowerCase() === tName.toLowerCase())) {
+      showToast('A unit with this name already exists', true);
+      return;
+    }
+    setConversions((prev) => [
+      ...prev,
+      {
+        id: `conv-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        unit_name: tName,
+        multiplier: m,
+      },
+    ]);
+    setConvName('');
+    setConvMult('');
+  };
+
+  const handleRemoveConv = (id: string, uName: string) => {
+    setConversions((prev) => prev.filter((c) => (c.id ? c.id !== id : c.unit_name !== uName)));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,12 +61,16 @@ export function AddIngredientView() {
       category,
       unit,
       tracks_usage: tracksUsage,
+      conversions: category === 'provisions' ? conversions : [],
     });
 
     setIsSubmitting(false);
     if (success) {
       setName('');
       setNameTelugu('');
+      setConversions([]);
+      setConvName('');
+      setConvMult('');
     }
   };
 
@@ -191,6 +225,80 @@ export function AddIngredientView() {
               </span>
             </div>
           </div>
+
+          {/* Secondary Packaging Units Configuration */}
+          {category === 'provisions' && (
+            <div className="p-3.5 bg-[#fafbf9] border border-[#e5e0d5] rounded-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Scale size={14} className="text-[#193d2c]" />
+                  <span className="text-xs font-bold text-[#131715] uppercase tracking-wider font-mono-fig">
+                    Secondary Packaging Units (Optional)
+                  </span>
+                </div>
+                <span className="text-[11px] text-[#59635e]">
+                  Converts into base unit (<strong className="text-[#131715]">{unit || 'unit'}</strong>)
+                </span>
+              </div>
+
+              {conversions.length > 0 && (
+                <div className="space-y-1.5">
+                  {conversions.map((c) => (
+                    <div
+                      key={c.id || c.unit_name}
+                      className="flex items-center justify-between p-2 bg-white border border-[#e5e0d5] rounded-sm text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-[#131715]">{c.unit_name}</span>
+                        <span className="font-mono-fig text-[11px] px-2 py-0.5 rounded bg-[#e6f0ea] text-[#193d2c] font-medium border border-[#193d2c]/20">
+                          1 {c.unit_name} = {c.multiplier} {unit}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveConv(c.id, c.unit_name)}
+                        className="text-[#942426] hover:bg-[#faeaea] p-1 rounded transition-colors cursor-pointer"
+                        title="Remove unit"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <input
+                    type="text"
+                    placeholder={`Unit Name (e.g. 25 ${unit} Bag)`}
+                    value={convName}
+                    onChange={(e) => setConvName(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-[#e5e0d5] rounded-sm text-[#131715] focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    step="any"
+                    min="0.001"
+                    placeholder={`Multiplier (${unit})`}
+                    value={convMult}
+                    onChange={(e) => setConvMult(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-[#e5e0d5] rounded-sm text-[#131715] font-mono-fig focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddConv}
+                    disabled={!convName.trim() || !convMult || parseFloat(convMult) <= 0}
+                    className="px-3 py-1.5 text-xs font-semibold rounded-sm bg-white border border-[#193d2c] text-[#193d2c] hover:bg-[#e6f0ea] transition-colors cursor-pointer shrink-0 disabled:opacity-40"
+                  >
+                    + Add
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="bg-[#ffffff] border border-[#e5e0d5] p-3 rounded-sm text-xs text-[#59635e]">
             <strong className="text-[#131715]">Note on register durability:</strong> New items start with 0.00 shelf stock and 0.00 unit price. When the first purchase is logged, the initial cost and stock balance will be established automatically.

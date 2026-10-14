@@ -10,25 +10,117 @@ import {
   AlertTriangle,
   ArrowUpDown,
   Database,
+  Scale,
+  Trash2,
+  X,
+  Sparkles,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { Ingredient } from '../types';
+import { Ingredient, UnitConversion } from '../types';
 
 export function IngredientsView() {
   const {
     ingredients,
     toggleIngredientActive,
     hasFullEditAccess,
+    hasStockEditAccess,
+    updateIngredientConversions,
     navigateTo,
     setDatabaseModalOpen,
     credentialSource,
     profile,
   } = useApp();
 
+  const canManage = hasFullEditAccess || hasStockEditAccess;
+
   const [activeTab, setActiveTab] = useState<'provisions' | 'perishable' >('provisions');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'telugu' | 'stock' | 'value'>('name');
   const [sortAsc, setSortAsc] = useState(true);
+
+  // Conversion management state
+  const [managingIngredient, setManagingIngredient] = useState<Ingredient | null>(null);
+  const [tempConversions, setTempConversions] = useState<UnitConversion[]>([]);
+  const [newUnitName, setNewUnitName] = useState('');
+  const [newMultiplier, setNewMultiplier] = useState('');
+  const [isSavingConversions, setIsSavingConversions] = useState(false);
+
+  const openManageModal = (ing: Ingredient) => {
+    setManagingIngredient(ing);
+    setTempConversions(ing.conversions ? [...ing.conversions] : []);
+    setNewUnitName('');
+    setNewMultiplier('');
+  };
+
+  const closeManageModal = () => {
+    setManagingIngredient(null);
+    setTempConversions([]);
+    setNewUnitName('');
+    setNewMultiplier('');
+  };
+
+  const handleAddConversion = () => {
+    const trimmed = newUnitName.trim();
+    const mult = parseFloat(newMultiplier);
+    if (!trimmed || isNaN(mult) || mult <= 0) return;
+    if (tempConversions.some((c) => c.unit_name.toLowerCase() === trimmed.toLowerCase())) return;
+
+    setTempConversions((prev) => [
+      ...prev,
+      {
+        id: `conv-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        unit_name: trimmed,
+        multiplier: mult,
+      },
+    ]);
+    setNewUnitName('');
+    setNewMultiplier('');
+  };
+
+  const handleRemoveConversion = (convId: string, unitName: string) => {
+    setTempConversions((prev) =>
+      prev.filter((c) => (c.id ? c.id !== convId : c.unit_name !== unitName))
+    );
+  };
+
+  const handleSaveConversions = async () => {
+    if (!managingIngredient) return;
+    setIsSavingConversions(true);
+    await updateIngredientConversions(managingIngredient.ingredient_id, tempConversions);
+    setIsSavingConversions(false);
+    closeManageModal();
+  };
+
+  const getPresetsForUnit = (unit: string) => {
+    const u = unit.toLowerCase();
+    if (u === 'kg') {
+      return [
+        { unit_name: '25 kg Bag', multiplier: 25 },
+        { unit_name: '50 kg Bag', multiplier: 50 },
+        { unit_name: '100 kg Quintal', multiplier: 100 },
+        { unit_name: '500 g Packet', multiplier: 0.5 },
+        { unit_name: '1 kg Packet', multiplier: 1 },
+      ];
+    }
+    if (u === 'litre' || u === 'liter' || u === 'l') {
+      return [
+        { unit_name: '15 L Tin', multiplier: 15 },
+        { unit_name: '1 L Pouch', multiplier: 1 },
+        { unit_name: '5 L Can', multiplier: 5 },
+      ];
+    }
+    if (u === 'piece' || u === 'pieces' || u === 'pcs') {
+      return [
+        { unit_name: 'Tray of 30', multiplier: 30 },
+        { unit_name: 'Box of 100', multiplier: 100 },
+        { unit_name: 'Pack of 10', multiplier: 10 },
+      ];
+    }
+    return [
+      { unit_name: `Pack of 10 ${unit}`, multiplier: 10 },
+      { unit_name: `Box of 25 ${unit}`, multiplier: 25 },
+    ];
+  };
 
   const filtered = ingredients.filter((item) => {
     if (activeTab === 'provisions' && item.category !== 'provisions') return false;
@@ -272,7 +364,7 @@ export function IngredientsView() {
                     </div>
                   </th>
                   <th className="py-2.5 px-3 text-center">Status</th>
-                  {hasFullEditAccess && <th className="py-2.5 px-3 text-right">Action</th>}
+                  {canManage && <th className="py-2.5 px-3 text-right">Action</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#e5e0d5]">
@@ -291,6 +383,19 @@ export function IngredientsView() {
                         <div className="font-semibold text-sm text-[#131715]">
                           {item.name}
                         </div>
+                        {item.category === 'provisions' && item.conversions && item.conversions.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {item.conversions.map((c) => (
+                              <span
+                                key={c.id || c.unit_name}
+                                className="inline-flex items-center text-[10px] font-mono-fig px-1.5 py-0.5 rounded bg-[#f4f7f5] text-[#193d2c] border border-[#e5e0d5]"
+                                title={`1 ${c.unit_name} = ${c.multiplier} ${item.unit}`}
+                              >
+                                {c.unit_name} (={c.multiplier}{item.unit})
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="py-2.5 px-3 font-sans">
                         {item.name_telugu ? (
@@ -325,6 +430,25 @@ export function IngredientsView() {
                         <span className="text-[11px] text-[#59635e] font-sans">
                           {item.unit}
                         </span>
+                        {item.conversions && item.conversions.length > 0 && item.current_stock > 0 && (
+                          <div
+                            className="text-[10.5px] text-[#193d2c] font-sans mt-0.5"
+                            title={item.conversions
+                              .map(
+                                (c) =>
+                                  `≈ ${(item.current_stock / c.multiplier).toLocaleString('en-IN', {
+                                    maximumFractionDigits: 1,
+                                  })} ${c.unit_name}`
+                              )
+                              .join(' | ')}
+                          >
+                            ≈{' '}
+                            {(item.current_stock / item.conversions[0].multiplier).toLocaleString('en-IN', {
+                              maximumFractionDigits: 1,
+                            })}{' '}
+                            {item.conversions[0].unit_name}
+                          </div>
+                        )}
                       </td>
                       <td className="py-2.5 px-3 text-right text-[#59635e]">
                         {formatCurrency(item.current_price)}
@@ -343,19 +467,33 @@ export function IngredientsView() {
                           </span>
                         )}
                       </td>
-                      {hasFullEditAccess && (
+                      {canManage && (
                         <td className="py-2.5 px-3 text-right font-sans whitespace-nowrap">
-                          <button
-                            id={`toggle-active-${item.ingredient_id}`}
-                            onClick={() => toggleIngredientActive(item.ingredient_id)}
-                            className={`px-2.5 py-1 text-xs rounded-sm border transition-colors cursor-pointer ${
-                              item.active
-                                ? 'bg-white border-[#e5e0d5] text-[#59635e] hover:bg-[#faeaea] hover:text-[#942426] hover:border-[#942426]'
-                                : 'bg-white border-[#193d2c] text-[#193d2c] hover:bg-[#e6f0ea]'
-                            }`}
-                          >
-                            {item.active ? 'Mark inactive' : 'Reactivate'}
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            {item.category === 'provisions' && (
+                              <button
+                                onClick={() => openManageModal(item)}
+                                className="px-2 py-1 text-xs rounded-sm border border-[#193d2c]/40 bg-white text-[#193d2c] hover:bg-[#e6f0ea] transition-colors cursor-pointer flex items-center gap-1 font-medium"
+                                title="Configure secondary packaging units (bags, tins, packets, crates)"
+                              >
+                                <Scale size={11} />
+                                <span>Units ({item.conversions?.length || 0})</span>
+                              </button>
+                            )}
+                            {hasFullEditAccess && (
+                              <button
+                                id={`toggle-active-${item.ingredient_id}`}
+                                onClick={() => toggleIngredientActive(item.ingredient_id)}
+                                className={`px-2 py-1 text-xs rounded-sm border transition-colors cursor-pointer ${
+                                  item.active
+                                    ? 'bg-white border-[#e5e0d5] text-[#59635e] hover:bg-[#faeaea] hover:text-[#942426] hover:border-[#942426]'
+                                    : 'bg-white border-[#193d2c] text-[#193d2c] hover:bg-[#e6f0ea]'
+                                }`}
+                              >
+                                {item.active ? 'Inactive' : 'Reactivate'}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -366,6 +504,196 @@ export function IngredientsView() {
           </div>
         )}
       </div>
+
+      {/* Manage Packaging Units Modal */}
+      {managingIngredient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+          <div className="bg-white border border-[#e5e0d5] rounded-sm max-w-lg w-full p-5 sm:p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-[#e5e0d5] pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-sm bg-[#e6f0ea] text-[#193d2c]">
+                  <Scale size={18} />
+                </div>
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-[#131715]">
+                    Packaging Units &amp; Conversions
+                  </h3>
+                  <p className="text-xs text-[#59635e]">
+                    {managingIngredient.name} {managingIngredient.name_telugu ? `(${managingIngredient.name_telugu})` : ''}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={closeManageModal}
+                className="text-[#59635e] hover:text-[#131715] p-1 rounded hover:bg-[#f4f7f5] transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Base Unit Card */}
+            <div className="bg-[#f4f7f5] border border-[#e5e0d5] rounded-sm p-3 text-xs flex items-center justify-between">
+              <div>
+                <span className="text-[#59635e] block text-[10px] uppercase tracking-wider font-mono-fig font-bold">
+                  Base Inventory Unit
+                </span>
+                <span className="font-bold text-[#193d2c] text-sm font-mono-fig">
+                  {managingIngredient.unit}
+                </span>
+              </div>
+              <div className="text-right text-[#59635e] text-[11px] max-w-[240px]">
+                All packaging units convert into <strong className="text-[#131715]">{managingIngredient.unit}</strong> automatically during purchases and daily meal usage.
+              </div>
+            </div>
+
+            {/* Configured Conversions List */}
+            <div className="space-y-2">
+              <span className="text-[11px] font-bold text-[#59635e] uppercase tracking-wider font-mono-fig block">
+                Configured Packaging Units ({tempConversions.length})
+              </span>
+
+              {tempConversions.length === 0 ? (
+                <div className="text-center py-5 border border-dashed border-[#e5e0d5] rounded-sm text-xs text-[#59635e]">
+                  No secondary packaging units configured yet. Purchases will use base unit ({managingIngredient.unit}).
+                </div>
+              ) : (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar">
+                  {tempConversions.map((conv) => (
+                    <div
+                      key={conv.id || conv.unit_name}
+                      className="flex items-center justify-between p-2.5 bg-white border border-[#e5e0d5] rounded-sm text-xs hover:border-[#193d2c]/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-[#131715]">{conv.unit_name}</span>
+                        <span className="font-mono-fig text-[11px] px-2 py-0.5 rounded bg-[#e6f0ea] text-[#193d2c] font-medium border border-[#193d2c]/20">
+                          1 {conv.unit_name} = {conv.multiplier} {managingIngredient.unit}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveConversion(conv.id, conv.unit_name)}
+                        className="text-[#942426] hover:bg-[#faeaea] p-1.5 rounded transition-colors cursor-pointer"
+                        title="Remove unit"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Quick Add Presets */}
+            {(() => {
+              const presets = getPresetsForUnit(managingIngredient.unit).filter(
+                (p) => !tempConversions.some((c) => c.unit_name.toLowerCase() === p.unit_name.toLowerCase())
+              );
+              if (presets.length === 0) return null;
+              return (
+                <div className="space-y-1.5 pt-1 border-t border-[#e5e0d5]">
+                  <span className="text-[10px] font-semibold text-[#59635e] uppercase tracking-wider font-mono-fig flex items-center gap-1">
+                    <Sparkles size={11} className="text-[#193d2c]" /> Quick Suggestions
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {presets.map((preset) => (
+                      <button
+                        key={preset.unit_name}
+                        type="button"
+                        onClick={() => {
+                          setTempConversions((prev) => [
+                            ...prev,
+                            {
+                              id: `conv-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+                              unit_name: preset.unit_name,
+                              multiplier: preset.multiplier,
+                            },
+                          ]);
+                        }}
+                        className="text-[11px] px-2 py-1 rounded bg-[#f7f9f7] hover:bg-[#e6f0ea] text-[#193d2c] border border-[#e5e0d5] hover:border-[#193d2c]/30 transition-colors cursor-pointer flex items-center gap-1"
+                      >
+                        <Plus size={10} />
+                        <span>{preset.unit_name} ({preset.multiplier} {managingIngredient.unit})</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Add Custom Unit Form */}
+            <div className="p-3 bg-[#fafbf9] border border-[#e5e0d5] rounded-sm space-y-2.5">
+              <span className="text-[11px] font-bold text-[#131715] uppercase tracking-wider font-mono-fig block">
+                Add Custom Packaging Unit
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] uppercase font-semibold text-[#59635e] mb-1 font-mono-fig">
+                    Unit Name / Label
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 25 kg Bag, 15 L Tin, Box"
+                    value={newUnitName}
+                    onChange={(e) => setNewUnitName(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-[#e5e0d5] rounded-sm text-[#131715] focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-semibold text-[#59635e] mb-1 font-mono-fig">
+                    Contains ({managingIngredient.unit})
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0.001"
+                    placeholder="Multiplier (e.g. 25, 0.5)"
+                    value={newMultiplier}
+                    onChange={(e) => setNewMultiplier(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-[#e5e0d5] rounded-sm text-[#131715] font-mono-fig focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
+                  />
+                </div>
+              </div>
+
+              {/* Live Preview of Conversion Formula */}
+              {newUnitName.trim() && parseFloat(newMultiplier) > 0 && (
+                <div className="text-[11px] text-[#193d2c] font-medium bg-[#e6f0ea] px-2.5 py-1 rounded-sm border border-[#193d2c]/20">
+                  Formula: 1 {newUnitName.trim()} = {parseFloat(newMultiplier)} {managingIngredient.unit}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleAddConversion}
+                disabled={!newUnitName.trim() || !newMultiplier || parseFloat(newMultiplier) <= 0}
+                className="w-full py-1.5 text-xs font-semibold rounded-sm bg-white border border-[#193d2c] text-[#193d2c] hover:bg-[#e6f0ea] transition-colors cursor-pointer flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Plus size={13} />
+                <span>Add Packaging Unit</span>
+              </button>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#e5e0d5]">
+              <button
+                type="button"
+                onClick={closeManageModal}
+                disabled={isSavingConversions}
+                className="px-3 py-1.5 text-xs border border-[#e5e0d5] rounded-sm text-[#59635e] hover:text-[#131715] bg-white transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveConversions}
+                disabled={isSavingConversions}
+                className="px-4 py-1.5 text-xs font-semibold rounded-sm bg-[#193d2c] text-[#f7f9f7] hover:bg-[#112a1f] transition-all cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                {isSavingConversions ? 'Saving Changes...' : 'Save Units'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

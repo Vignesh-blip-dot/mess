@@ -298,7 +298,7 @@ export function Navigation() {
         <button
           id="mobile-nav-dashboard"
           onClick={() => navigateTo('dashboard')}
-          className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[56px] min-h-[48px] rounded-lg transition-colors relative ${
+          className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[56px] min-h-[48px] rounded-lg transition-colors relative touch-manipulation cursor-pointer ${
             currentPage === 'dashboard' ? 'text-[#193d2c]' : 'text-[#59635e]'
           }`}
         >
@@ -317,7 +317,7 @@ export function Navigation() {
         <button
           id="mobile-nav-stock"
           onClick={() => navigateTo('ingredients')}
-          className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[56px] min-h-[48px] rounded-lg transition-colors relative ${
+          className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[56px] min-h-[48px] rounded-lg transition-colors relative touch-manipulation cursor-pointer ${
             currentPage === 'ingredients' ? 'text-[#193d2c]' : 'text-[#59635e]'
           }`}
         >
@@ -337,7 +337,7 @@ export function Navigation() {
           <button
             id="mobile-quick-action-fab"
             onClick={() => setQuickActionOpen(true)}
-            className="flex flex-col items-center justify-center -mt-4 w-12 h-12 rounded-full bg-[#193d2c] text-[#f7f9f7] shadow-md active:scale-95 transition-transform"
+            className="flex flex-col items-center justify-center -mt-4 w-12 h-12 rounded-full bg-[#193d2c] text-[#f7f9f7] shadow-md active:scale-95 transition-transform touch-manipulation cursor-pointer"
             aria-label="Quick entry options"
           >
             <Plus size={24} strokeWidth={2.5} />
@@ -348,7 +348,7 @@ export function Navigation() {
         <button
           id="mobile-nav-usage"
           onClick={() => navigateTo('headcount')}
-          className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[56px] min-h-[48px] rounded-lg transition-colors relative ${
+          className={`flex flex-col items-center justify-center py-1.5 px-3 min-w-[56px] min-h-[48px] rounded-lg transition-colors relative touch-manipulation cursor-pointer ${
             currentPage === 'headcount' ? 'text-[#193d2c]' : 'text-[#59635e]'
           }`}
         >
@@ -367,7 +367,7 @@ export function Navigation() {
         <button
           id="mobile-nav-more"
           onClick={() => setDrawerOpen(true)}
-          className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[56px] min-h-[48px] rounded-lg transition-colors relative text-[#59635e]"
+          className="flex flex-col items-center justify-center py-1.5 px-3 min-w-[56px] min-h-[48px] rounded-lg transition-colors relative text-[#59635e] touch-manipulation cursor-pointer"
         >
           <Menu size={20} />
           <span className="text-[10px] mt-1 font-medium leading-none">Menu</span>

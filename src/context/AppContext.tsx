@@ -11,6 +11,7 @@ import {
   PageId,
   MealType,
   UserRole,
+  UnitConversion,
 } from '../types';
 import { createClient } from '@supabase/supabase-js';
 import {
@@ -76,8 +77,28 @@ interface AppContextType {
   loginOffline: (email: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   switchDemoProfile: (profileId: string, customAccess?: CoordinatorAccessLevel) => void;
-  logPurchaseBatch: (data: { items: { ingredientId: string; quantity: number; totalCost: number }[]; usageDate: string; vendor?: string }) => Promise<boolean>;
-  logUsageBatch: (data: { items: { ingredientId: string; quantity: number }[]; usageDate: string; mealType?: 'breakfast' | 'lunch' | 'dinner' | '' }) => Promise<boolean>;
+  logPurchaseBatch: (data: {
+    items: {
+      ingredientId: string;
+      quantity: number;
+      totalCost: number;
+      enteredQuantity?: number | null;
+      enteredUnit?: string | null;
+    }[];
+    usageDate: string;
+    vendor?: string;
+  }) => Promise<boolean>;
+  logUsageBatch: (data: {
+    items: {
+      ingredientId: string;
+      quantity: number;
+      enteredQuantity?: number | null;
+      enteredUnit?: string | null;
+    }[];
+    usageDate: string;
+    mealType?: 'breakfast' | 'lunch' | 'dinner' | '';
+  }) => Promise<boolean>;
+  updateIngredientConversions: (ingredientId: string, conversions: UnitConversion[]) => Promise<boolean>;
   stockAdjustment: (data: {
     ingredientId: string;
     quantityChange: number;
@@ -99,6 +120,7 @@ interface AppContextType {
     category: IngredientCategory;
     unit: string;
     tracks_usage: boolean;
+    conversions?: UnitConversion[];
   }) => Promise<boolean>;
   toggleIngredientActive: (ingredientId: string) => Promise<boolean>;
   toggleIngredientTracksUsage: (ingredientId: string) => Promise<boolean>;
@@ -1154,7 +1176,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     usageDate,
     vendor,
   }: {
-    items: { ingredientId: string; quantity: number; totalCost: number }[];
+    items: {
+      ingredientId: string;
+      quantity: number;
+      totalCost: number;
+      enteredQuantity?: number | null;
+      enteredUnit?: string | null;
+    }[];
     usageDate: string;
     vendor?: string;
   }) => {
@@ -1169,7 +1197,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const batchCreatedAt = new Date().toISOString();
 
     for (const item of items) {
-      const { ingredientId, quantity, totalCost } = item;
+      const { ingredientId, quantity, totalCost, enteredQuantity, enteredUnit } = item;
       const ing = ingredients.find((i) => i.ingredient_id === ingredientId) || updatedIngsMap.get(ingredientId);
       if (!ing) {
         showToast('Ingredient not found', true);
@@ -1194,6 +1222,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ingredient_id: ingredientId,
         txn_type: 'purchase',
         quantity,
+        entered_quantity: enteredQuantity ?? null,
+        entered_unit: enteredUnit ?? null,
         total_cost: totalCost,
         usage_date: usageDate,
         vendor: vendor || null,
@@ -1215,6 +1245,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ingredient_id: ingredientId,
         txn_type: 'purchase',
         quantity,
+        entered_quantity: enteredQuantity ?? null,
+        entered_unit: enteredUnit ?? null,
         total_cost: totalCost,
         usage_date: usageDate,
         vendor: vendor || null,
@@ -1226,7 +1258,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       payloads.push(txnPayload);
 
       // Audit Log fallback prep
-      const qtyDesc = quantity > 0 ? `${quantity} ${ing.unit} ` : '';
+      const packagingDesc =
+        enteredQuantity && enteredUnit
+          ? `${enteredQuantity} ${enteredUnit} (${quantity} ${ing.unit})`
+          : quantity > 0
+          ? `${quantity} ${ing.unit}`
+          : '';
+      const qtyDesc = packagingDesc ? `${packagingDesc} ` : '';
       auditLogsToAdd.push({
         user_id: isValidUuid(profile?.id) ? profile.id : null,
         user_name: profile?.name || 'Staff',
@@ -1292,7 +1330,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     usageDate,
     mealType,
   }: {
-    items: { ingredientId: string; quantity: number }[];
+    items: {
+      ingredientId: string;
+      quantity: number;
+      enteredQuantity?: number | null;
+      enteredUnit?: string | null;
+    }[];
     usageDate: string;
     mealType?: 'breakfast' | 'lunch' | 'dinner' | '';
   }) => {
@@ -1307,7 +1350,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let totalDeductionCost = 0;
 
     for (const item of items) {
-      const { ingredientId, quantity } = item;
+      const { ingredientId, quantity, enteredQuantity, enteredUnit } = item;
       const ing = ingredients.find((i) => i.ingredient_id === ingredientId) || updatedIngsMap.get(ingredientId);
       if (!ing) {
         showToast('Ingredient not found', true);
@@ -1327,6 +1370,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ingredient_id: ingredientId,
         txn_type: 'usage',
         quantity: -Math.abs(quantity),
+        entered_quantity: enteredQuantity ? -Math.abs(enteredQuantity) : null,
+        entered_unit: enteredUnit ?? null,
         total_cost: itemCost,
         usage_date: usageDate,
         vendor: null,
@@ -1348,6 +1393,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ingredient_id: ingredientId,
         txn_type: 'usage',
         quantity: -Math.abs(quantity),
+        entered_quantity: enteredQuantity ? -Math.abs(enteredQuantity) : null,
+        entered_unit: enteredUnit ?? null,
         total_cost: itemCost,
         usage_date: usageDate,
         meal_type: itemMeal,
@@ -1357,12 +1404,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       payloads.push(txnPayload);
 
+      const usageDesc =
+        enteredQuantity && enteredUnit
+          ? `${Math.abs(enteredQuantity)} ${enteredUnit} (${Math.abs(quantity)} ${ing.unit})`
+          : `${Math.abs(quantity)} ${ing.unit}`;
+
       auditLogsToAdd.push({
         user_id: isValidUuid(profile?.id) ? profile.id : null,
         user_name: profile?.name || 'Staff',
         action: 'LOG_USAGE',
         entity_name: 'stock_transactions',
-        reason: `Deducted ${Math.abs(quantity)} ${ing.unit} ${ing.name} for ${itemMeal ? itemMeal.toUpperCase() : 'kitchen'} (₹${itemCost.toLocaleString('en-IN')})`,
+        reason: `Deducted ${usageDesc} ${ing.name} for ${itemMeal ? itemMeal.toUpperCase() : 'kitchen'} (₹${itemCost.toLocaleString('en-IN')})`,
       });
     }
 
@@ -1432,6 +1484,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       showToast(e.message || 'Error recording usage.', true);
       refreshDataFromSupabase();
       return false;
+    }
+  };
+
+  // Update secondary packaging conversions for an ingredient
+  const updateIngredientConversions = async (ingredientId: string, conversions: UnitConversion[]) => {
+    setIngredients((prev) =>
+      prev.map((item) =>
+        item.ingredient_id === ingredientId ? { ...item, conversions } : item
+      )
+    );
+
+    try {
+      const client = getSupabase();
+      await client
+        .from('ingredients')
+        .update({ conversions })
+        .eq('id', ingredientId);
+      showToast('Packaging units updated successfully');
+      return true;
+    } catch (e: any) {
+      console.warn('Conversions update local notice:', e);
+      showToast('Packaging units updated (saved in session)');
+      return true;
     }
   };
 
@@ -1638,12 +1713,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     category,
     unit,
     tracks_usage,
+    conversions,
   }: {
     name: string;
     name_telugu?: string;
     category: IngredientCategory;
     unit: string;
     tracks_usage: boolean;
+    conversions?: UnitConversion[];
   }) => {
     let newId = `ing-${Date.now()}`;
 
@@ -1658,6 +1735,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         active: true,
         current_stock: 0,
         current_price: 0,
+        conversions: conversions || [],
       };
       if (isValidUuid(profile?.id)) {
         insertPayload.created_by = profile.id;
@@ -1695,6 +1773,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       current_stock: 0,
       current_price: 0,
       created_by: profile?.id,
+      conversions: conversions || [],
     };
 
     setIngredients((prev) => [...prev, newIng]);
@@ -2093,6 +2172,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         switchDemoProfile,
         logPurchaseBatch,
         logUsageBatch,
+        updateIngredientConversions,
         stockAdjustment,
         requestStockAdjustment,
         resolveStockAdjustment,

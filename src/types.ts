@@ -12,6 +12,12 @@ export interface UserProfile {
 
 export type IngredientCategory = 'provisions' | 'perishable' ;
 
+export interface UnitConversion {
+  id: string;
+  unit_name: string; // e.g. "25 kg Bag", "15 L Tin", "500g Packet"
+  multiplier: number; // 1 unit_name = multiplier * base_unit (e.g. 25 for 1 bag = 25 kg)
+}
+
 export interface Ingredient {
   ingredient_id: string;
   name: string;
@@ -22,6 +28,7 @@ export interface Ingredient {
   active: boolean;
   current_stock: number;
   current_price: number;
+  conversions?: UnitConversion[];
   created_at?: string;
   created_by?: string;
 }
@@ -33,7 +40,9 @@ export interface StockTransaction {
   id: string;
   ingredient_id: string;
   txn_type: TransactionType;
-  quantity: number; // positive for purchase, negative for usage, signed for adjustment
+  quantity: number; // canonical quantity in base unit
+  entered_quantity?: number | null; // packaging quantity if non-base unit was used (e.g. 2)
+  entered_unit?: string | null; // packaging unit name (e.g. "25 kg Bag")
   total_cost: number;
   usage_date: string; // YYYY-MM-DD
   meal_type?: MealType | null;

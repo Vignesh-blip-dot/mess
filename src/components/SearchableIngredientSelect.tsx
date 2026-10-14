@@ -95,7 +95,7 @@ export function SearchableIngredientSelect({
         type="button"
         id={id}
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-3 py-2 text-sm bg-white border rounded-sm text-left transition-all flex items-center justify-between gap-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#193d2c] ${
+        className={`w-full px-3 py-2 text-sm bg-white border rounded-sm text-left transition-all flex items-center justify-between gap-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#193d2c] touch-manipulation ${
           isError
             ? 'border-[#942426]/50 bg-[#faeaea]/20'
             : isOpen
@@ -187,7 +187,7 @@ export function SearchableIngredientSelect({
                     key={item.ingredient_id}
                     type="button"
                     onClick={() => handleSelect(item.ingredient_id)}
-                    className={`w-full px-3 py-2 text-left text-xs transition-colors flex items-center justify-between gap-2 cursor-pointer ${
+                    className={`w-full px-3 py-2.5 sm:py-2 text-left text-xs transition-colors flex items-center justify-between gap-2 cursor-pointer touch-manipulation ${
                       isSelected
                         ? 'bg-[#e6f0ea] text-[#193d2c] font-medium'
                         : 'hover:bg-[#193d2c]/5 text-[#131715]'
