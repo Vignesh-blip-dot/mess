@@ -276,16 +276,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Helper for resilient daily summary upserts
+  // Helper for resilient daily summary and headcount upserts
   const safeUpsertDailySummary = async (payload: any) => {
     const client = getSupabase();
+    const date = payload.usage_date || payload.attendance_date;
     try {
-      const { error } = await client
+      // 1. If headcount is specified, persist to daily_headcount table
+      if (payload.student_count !== undefined || payload.guest_count !== undefined) {
+        const headcountData: any = {
+          attendance_date: date,
+          updated_at: new Date().toISOString(),
+        };
+        if (payload.student_count !== undefined) headcountData.student_count = payload.student_count;
+        if (payload.guest_count !== undefined) headcountData.guest_count = payload.guest_count;
+
+        const { error: hcErr } = await client
+          .from('daily_headcount')
+          .upsert(headcountData, { onConflict: 'attendance_date' });
+        if (!hcErr) return;
+      }
+
+      // 2. Try daily_summaries table
+      const { error: dsErr } = await client
+        .from('daily_summaries')
+        .upsert(payload, { onConflict: 'usage_date' });
+      if (!dsErr) return;
+
+      // 3. Fallback attempt on daily_expenditure_summary view
+      await client
         .from('daily_expenditure_summary')
         .upsert(payload, { onConflict: 'usage_date' });
-      if (error && (error.message?.includes('Could not find') || error.code === '42P01')) {
-        await client.from('daily_summaries').upsert(payload, { onConflict: 'usage_date' });
-      }
     } catch (e) {
       console.warn('Daily summary upsert error:', e);
     }
@@ -718,6 +738,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         debouncedRefresh();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_summaries' }, () => {
+        debouncedRefresh();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_headcount' }, () => {
         debouncedRefresh();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_logs' }, () => {

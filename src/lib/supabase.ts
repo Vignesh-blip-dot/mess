@@ -113,6 +113,7 @@ export interface TableDiagnostic {
   count: number;
   error: string | null;
   sampleItemName?: string;
+  resolvedTableName?: string;
 }
 
 export interface SupabaseHealthReport {
@@ -128,14 +129,17 @@ export interface SupabaseHealthReport {
 
 export async function runSupabaseHealthCheck(client = getSupabase()): Promise<SupabaseHealthReport> {
   const creds = getActiveCredentials();
-  const tablesToCheck = [
-    'ingredients',
-    'ingredient_current_stock',
-    'stock_transactions',
-    'daily_summaries',
-    'coordinator_assignments',
-    'profiles',
-    'audit_logs',
+  const tableCheckDefinitions: Array<{
+    key: string;
+    candidates: string[];
+  }> = [
+    { key: 'ingredients', candidates: ['ingredients'] },
+    { key: 'ingredient_current_stock', candidates: ['ingredient_current_stock'] },
+    { key: 'stock_transactions', candidates: ['stock_transactions'] },
+    { key: 'daily_summaries', candidates: ['daily_summaries', 'daily_expenditure_summary', 'daily_headcount'] },
+    { key: 'coordinator_assignments', candidates: ['coordinator_assignments'] },
+    { key: 'profiles', candidates: ['profiles'] },
+    { key: 'audit_logs', candidates: ['audit_logs', 'audit_log'] },
   ];
 
   const report: SupabaseHealthReport = {
@@ -148,49 +152,83 @@ export async function runSupabaseHealthCheck(client = getSupabase()): Promise<Su
     totalRecordsFound: 0,
   };
 
-  for (const tbl of tablesToCheck) {
-    try {
-      const { data, count, error } = await client
-        .from(tbl)
-        .select('*', { count: 'exact', head: false })
-        .limit(2);
+  for (const def of tableCheckDefinitions) {
+    let resolvedMatch: {
+      candidate: string;
+      count: number;
+      sampleName?: string;
+    } | null = null;
+    let lastError: any = null;
 
-      if (error) {
-        const isRoleErr =
-          error.message?.includes('current_role') ||
-          error.details?.includes('current_role') ||
-          error.code === '42501';
+    for (const cand of def.candidates) {
+      try {
+        const { data, count, error } = await client
+          .from(cand)
+          .select('*', { count: 'exact', head: false })
+          .limit(2);
 
-        if (isRoleErr) {
-          report.hasRoleFunctionConflict = true;
+        if (!error) {
+          report.connected = true;
+          const rowCount = count ?? (data ? data.length : 0);
+          const sampleName =
+            data && data.length > 0
+              ? (data[0].name || data[0].ingredient_id || data[0].usage_date || data[0].attendance_date || 'row')
+              : undefined;
+
+          resolvedMatch = {
+            candidate: cand,
+            count: rowCount,
+            sampleName,
+          };
+          break;
+        } else {
+          lastError = error;
+          const isRoleErr =
+            error.message?.includes('current_role') ||
+            error.details?.includes('current_role') ||
+            error.code === '42501';
+
+          if (isRoleErr) {
+            report.hasRoleFunctionConflict = true;
+          }
+
+          // If the error was NOT a missing table error, but an RLS or permission error,
+          // then the table DOES exist in Postgres!
+          const isMissingTable =
+            error.message?.includes('Could not find') ||
+            error.code === '42P01' ||
+            error.code === 'PGRST205';
+
+          if (!isMissingTable) {
+            resolvedMatch = {
+              candidate: cand,
+              count: 0,
+            };
+            break;
+          }
         }
-
-        report.tables[tbl] = {
-          tableName: tbl,
-          exists: !error.message?.includes('Could not find') && error.code !== '42P01',
-          count: 0,
-          error: error.message,
-        };
-      } else {
-        report.connected = true;
-        const rowCount = count ?? (data ? data.length : 0);
-        const sampleName = data && data.length > 0 ? (data[0].name || data[0].ingredient_id || 'row') : undefined;
-
-        report.tables[tbl] = {
-          tableName: tbl,
-          exists: true,
-          count: rowCount,
-          error: null,
-          sampleItemName: sampleName,
-        };
-        report.totalRecordsFound += rowCount;
+      } catch (e: any) {
+        lastError = e;
       }
-    } catch (e: any) {
-      report.tables[tbl] = {
-        tableName: tbl,
+    }
+
+    if (resolvedMatch) {
+      report.tables[def.key] = {
+        tableName: def.key,
+        resolvedTableName: resolvedMatch.candidate,
+        exists: true,
+        count: resolvedMatch.count,
+        error: null,
+        sampleItemName: resolvedMatch.sampleName,
+      };
+      report.totalRecordsFound += resolvedMatch.count;
+    } else {
+      const errMessage = lastError?.message || 'Table not found in schema';
+      report.tables[def.key] = {
+        tableName: def.key,
         exists: false,
         count: 0,
-        error: e.message || 'Network error',
+        error: errMessage,
       };
     }
   }

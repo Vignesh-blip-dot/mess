@@ -121,18 +121,22 @@ export function DatabaseStatusModal() {
     }
   };
 
-  const rlsFixSql = `-- Run this in Supabase SQL Editor to allow reading tables without RLS errors:
+  const rlsFixSql = `-- 1. Compatibility views (maps 'audit_logs' & 'daily_summaries' to your existing tables/views):
+CREATE OR REPLACE VIEW public.audit_logs AS SELECT * FROM public.audit_log;
+CREATE OR REPLACE VIEW public.daily_summaries AS SELECT * FROM public.daily_expenditure_summary;
+
+-- 2. Row Level Security policies to allow reading & transactions:
 ALTER TABLE public.ingredients ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read ingredients" ON public.ingredients;
 CREATE POLICY "Allow public read ingredients" ON public.ingredients FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow public update ingredients" ON public.ingredients;
 CREATE POLICY "Allow public update ingredients" ON public.ingredients FOR ALL USING (true);
 
 ALTER TABLE public.stock_transactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read stock_transactions" ON public.stock_transactions;
 CREATE POLICY "Allow public read stock_transactions" ON public.stock_transactions FOR SELECT USING (true);
-CREATE POLICY "Allow public insert stock_transactions" ON public.stock_transactions FOR INSERT WITH CHECK (true);
-
-ALTER TABLE public.daily_summaries ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read daily_summaries" ON public.daily_summaries FOR SELECT USING (true);
-CREATE POLICY "Allow public all daily_summaries" ON public.daily_summaries FOR ALL USING (true);`;
+DROP POLICY IF EXISTS "Allow public insert stock_transactions" ON public.stock_transactions;
+CREATE POLICY "Allow public insert stock_transactions" ON public.stock_transactions FOR INSERT WITH CHECK (true);`;
 
   const envFileSnippet = `# Create or edit .env in your project root in VS Code:
 VITE_SUPABASE_URL=${customUrl || 'https://your-project.supabase.co'}
@@ -256,7 +260,14 @@ VITE_SUPABASE_ANON_KEY=${customKey || 'your-anon-key-here'}`;
                       }`}
                     >
                       <div className="min-w-0">
-                        <div className="font-bold text-[#131715] truncate">{tbl}</div>
+                        <div className="font-bold text-[#131715] truncate flex items-center gap-1.5">
+                          <span>{tbl}</span>
+                          {diag.resolvedTableName && diag.resolvedTableName !== tbl && (
+                            <span className="text-[10px] font-sans font-normal text-[#59635e] bg-[#f5f2eb] px-1.5 py-0.5 rounded border border-[#e5e0d5]">
+                              via {diag.resolvedTableName}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11px] text-[#59635e]">
                           {diag.error ? (
                             <span className="text-[#942426] font-sans">
