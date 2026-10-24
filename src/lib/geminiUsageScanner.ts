@@ -108,6 +108,8 @@ export async function scanMealUsageSheet(
     })
     .join('\n');
 
+  const currentYear = new Date().getFullYear();
+
   const systemPrompt = `You are a specialized AI parser for Indian student hostel mess daily kitchen ingredient usage chits, registers, consumption logs, and issue slips.
 Your task is to accurately extract which provisional ingredients and quantities were taken out/consumed from the store room for cooking.
 
@@ -122,7 +124,10 @@ The user tracks inventory for these registered provisions:
 ${inventoryCatalog}
 
 Instructions:
-1. Identify the Usage Date in YYYY-MM-DD format (convert DD/MM/YYYY, DD-MMM-YY, or DD.MM.YYYY into YYYY-MM-DD). If absent or unclear, return null.
+1. Identify the Usage Date in YYYY-MM-DD format (convert DD/MM/YYYY, DD-MMM-YY, or DD.MM.YYYY into YYYY-MM-DD).
+   - The active calendar/academic year is ${currentYear}. If the usage chit or register only specifies day and month (e.g. "03/10", "11 Oct", "12-10") or if the year is ambiguous/omitted, ALWAYS use year ${currentYear}.
+   - Do NOT default to past years like 2024 or 2025 unless explicitly written.
+   - If absent or unclear, return null.
 2. Identify Meal Type if specified ("breakfast", "lunch", "dinner", or null).
 3. Extract each provisional ingredient used:
    - "raw_name": The exact item text written on the usage sheet (e.g., "Rice", "Sona Masoori", "Toor Dal", "Oil", "Chilli Powder", "Salt").
@@ -313,7 +318,13 @@ Instructions:
 
   let validDate = null;
   if (parsed?.usage_date && /^\d{4}-\d{2}-\d{2}$/.test(parsed.usage_date)) {
-    validDate = parsed.usage_date;
+    const currentYear = new Date().getFullYear();
+    // Autocorrect if OCR mistakenly tagged 2024 for an active 2026 mess session
+    if (parsed.usage_date.startsWith('2024-') && currentYear >= 2026) {
+      validDate = parsed.usage_date.replace(/^2024-/, `${currentYear}-`);
+    } else {
+      validDate = parsed.usage_date;
+    }
   }
 
   let validMeal: MealType | null = null;
