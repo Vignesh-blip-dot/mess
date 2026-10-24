@@ -450,12 +450,40 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // 2. Fetch Stock Transactions
-      const { data: txnsData, error: txnsErr } = await client
-        .from('stock_transactions')
-        .select('*, profiles(name)')
-        .order('created_at', { ascending: false })
-        .limit(300);
+      // 2. Fetch Stock Transactions (fetch full ledger without 300-row truncation)
+      let allTxnsData: any[] = [];
+      let txnsErr: any = null;
+      let from = 0;
+      const CHUNK_SIZE = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: chunk, error: chunkErr } = await client
+          .from('stock_transactions')
+          .select('*, profiles(name)')
+          .order('usage_date', { ascending: false })
+          .order('created_at', { ascending: false })
+          .range(from, from + CHUNK_SIZE - 1);
+
+        if (chunkErr) {
+          txnsErr = chunkErr;
+          console.warn('Error fetching transactions chunk:', chunkErr);
+          break;
+        }
+
+        if (chunk && chunk.length > 0) {
+          allTxnsData = allTxnsData.concat(chunk);
+          if (chunk.length < CHUNK_SIZE) {
+            hasMore = false;
+          } else {
+            from += CHUNK_SIZE;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      const txnsData = allTxnsData.length > 0 || !txnsErr ? allTxnsData : null;
 
       if (!txnsErr && txnsData) {
         anySuccess = true;
