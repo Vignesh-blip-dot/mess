@@ -222,23 +222,42 @@ export function LogUsageView() {
             
             {/* Meal selector */}
             <div>
-              <label
-                htmlFor="usage-meal"
-                className="block text-xs font-semibold text-[#59635e] uppercase tracking-wider mb-1"
-              >
-                Meal Type (Optional)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label
+                  htmlFor="usage-meal"
+                  className="block text-xs font-semibold text-[#59635e] uppercase tracking-wider"
+                >
+                  Meal Type
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono-fig px-1.5 py-0.5 rounded bg-[#f4f7f5] text-[#59635e] border border-[#e5e0d5]">
+                    Optional
+                  </span>
+                  {globalMealType && (
+                    <button
+                      type="button"
+                      onClick={() => setGlobalMealType('')}
+                      className="text-[11px] text-[#942426] hover:underline cursor-pointer font-medium"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
               <select
                 id="usage-meal"
                 value={globalMealType}
-                onChange={(e) => setGlobalMealType(e.target.value as MealType)}
+                onChange={(e) => setGlobalMealType(e.target.value as MealType | '')}
                 className="w-full px-3 py-2 text-sm bg-white border border-[#e5e0d5] rounded-sm text-[#131715] focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
               >
-                <option value="">General / None (Optional)</option>
+                <option value="">No Meal Specified (General / Whole-Day Issue)</option>
                 <option value="breakfast">Breakfast</option>
                 <option value="lunch">Lunch</option>
                 <option value="dinner">Dinner</option>
               </select>
+              <p className="text-[11px] text-[#8b948f] mt-1">
+                Completely optional. Leave as "No Meal Specified" for general daily storeroom issues.
+              </p>
             </div>
           </div>
 

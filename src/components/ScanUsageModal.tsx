@@ -692,15 +692,31 @@ export function ScanUsageModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-[#59635e] uppercase tracking-wider mb-1 font-mono-fig">
-                    Detected Meal Type
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[10px] font-bold text-[#59635e] uppercase tracking-wider font-mono-fig">
+                      Detected Meal Type
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-mono-fig px-1.5 py-0.2 rounded bg-[#f4f7f5] text-[#59635e] border border-[#e5e0d5]">
+                        Optional
+                      </span>
+                      {mealType && (
+                        <button
+                          type="button"
+                          onClick={() => setMealType('')}
+                          className="text-[10px] text-[#942426] hover:underline cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <select
                     value={mealType}
                     onChange={(e) => setMealType(e.target.value as MealType | '')}
                     className="w-full px-2 py-1.5 text-xs bg-white border border-[#e5e0d5] rounded-sm text-[#131715] focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
                   >
-                    <option value="">General / None (Whole Day)</option>
+                    <option value="">No Meal Specified (General / Whole Day)</option>
                     <option value="breakfast">Breakfast</option>
                     <option value="lunch">Lunch</option>
                     <option value="dinner">Dinner</option>

@@ -115,7 +115,7 @@ Your task is to accurately extract which provisional ingredients and quantities 
 
 CRITICAL MANDATORY RULES:
 1. ONLY QUANTITIES AND DATE: Usage sheets contain ingredient names, quantities used, units, and date of usage. There are NO prices, rates, or taxes on usage sheets. Do NOT try to extract prices or costs.
-2. MEAL TYPE: If the sheet indicates "Breakfast" / "Tiffin", "Lunch", or "Dinner" / "Night", identify it as "breakfast", "lunch", or "dinner". Otherwise return null.
+2. MEAL TYPE (COMPLETELY OPTIONAL): Meal type is completely optional. Only if the sheet explicitly writes "Breakfast" / "Tiffin", "Lunch", or "Dinner" / "Night", set it to "breakfast", "lunch", or "dinner". If not explicitly mentioned, always return null.
 3. MULTI-PAGE & CONTINUATION:
    - If this sheet indicates more items follow on the next page (e.g. "continued...", "PTO", or arrow), set "is_continued": true.
    - If this is Page 2 or a continuation sheet, extract all ingredients and quantities on this page.
@@ -128,7 +128,7 @@ Instructions:
    - The active calendar/academic year is ${currentYear}. If the usage chit or register only specifies day and month (e.g. "03/10", "11 Oct", "12-10") or if the year is ambiguous/omitted, ALWAYS use year ${currentYear}.
    - Do NOT default to past years like 2024 or 2025 unless explicitly written.
    - If absent or unclear, return null.
-2. Identify Meal Type if specified ("breakfast", "lunch", "dinner", or null).
+2. Identify Meal Type ONLY if explicitly specified ("breakfast", "lunch", "dinner", or null). Default is null.
 3. Extract each provisional ingredient used:
    - "raw_name": The exact item text written on the usage sheet (e.g., "Rice", "Sona Masoori", "Toor Dal", "Oil", "Chilli Powder", "Salt").
    - "matched_ingredient_id": The ID of the matching provision from the catalog above, or null if no match.
