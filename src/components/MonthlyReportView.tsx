@@ -225,15 +225,6 @@ export function MonthlyReportView() {
         />
       </div>
 
-      {transactions.length >= 300 && (
-        <div className="bg-[#fff9e6] border border-[#e5d5b0] rounded-sm p-3.5 text-xs text-[#8a631e] flex items-start gap-2.5 no-print shadow-xs">
-          <AlertCircle size={16} className="text-[#b8860b] shrink-0 mt-0.5" />
-          <div>
-            <span className="font-semibold block text-[#704f14]">Ledger Volume Notice (300 transactions in view):</span>
-            Displaying the 300 most recent transactions. Opening balances for older ledger periods may be truncated in client memory.
-          </div>
-        </div>
-      )}
 
       {/* Summary Page (Styled for print and screen) */}
       <div className="report-page bg-white border border-[#e5e0d5] rounded-sm p-5 sm:p-6 shadow-[0_1px_3px_rgba(19,23,21,0.03)] space-y-4">
