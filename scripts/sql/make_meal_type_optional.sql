@@ -10,8 +10,8 @@ DECLARE
     r RECORD;
     found_count integer := 0;
 BEGIN
-    FOR r IN (
-        SELECT t.tgname, p.proname, p.prosrc
+    FOR r IN
+        SELECT t.tgname, p.proname
         FROM pg_trigger t
         JOIN pg_proc p ON t.tgfoid = p.oid
         WHERE t.tgrelid = 'public.stock_transactions'::regclass
@@ -21,17 +21,17 @@ BEGIN
             OR (p.prosrc ILIKE '%meal_type%' AND p.prosrc ILIKE '%RAISE EXCEPTION%')
           )
     LOOP
-        EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.stock_transactions;', r.tgname);
-        RAISE NOTICE 'Successfully dropped trigger: % (calling %)', r.tgname, r.proname;
+        EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.stock_transactions CASCADE;', r.tgname);
+        RAISE NOTICE 'Successfully dropped trigger: % (calling function %)', r.tgname, r.proname;
         found_count := found_count + 1;
     END LOOP;
 
     IF found_count = 0 THEN
-        RAISE NOTICE 'No triggers enforcing meal_type found, checking constraints...';
+        RAISE NOTICE 'No triggers enforcing meal_type found.';
     END IF;
 END $$;
 
--- STEP 2: Ensure meal_type column allows NULL and optional values
+-- STEP 2: Ensure meal_type column allows NULL
 ALTER TABLE public.stock_transactions ALTER COLUMN meal_type DROP NOT NULL;
 
 -- STEP 3: Ensure check constraint on meal_type allows NULL and 'general'
@@ -72,6 +72,6 @@ BEGIN
 
         -- Clean up test row
         DELETE FROM public.stock_transactions WHERE id = v_inserted_id;
-        RAISE NOTICE 'VERIFICATION PASSED: Meal type is now completely optional for provisions and all ingredients!';
+        RAISE NOTICE 'SUCCESS: Meal type is now completely optional for provisions and all ingredients!';
     END IF;
 END $$;
