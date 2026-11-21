@@ -26,19 +26,7 @@ export interface ExtractedBillData {
   items: ExtractedBillItem[];
 }
 
-/**
- * Obfuscated default key to prevent repository push protection blockers while enabling zero-config OCR.
- */
-const ENCODED_DEFAULT_KEY = 'QVEuQWI4Uk42S2JLeGVOdnkxd3BadFpkX0tRMGpPd2tkcnQtNEU1REI2cmo3c25FSno0RGc=';
-
 export function getDefaultGeminiApiKey(): string {
-  try {
-    if (typeof atob !== 'undefined') {
-      return atob(ENCODED_DEFAULT_KEY);
-    }
-  } catch {
-    // ignore
-  }
   return '';
 }
 
@@ -48,7 +36,10 @@ export function getDefaultGeminiApiKey(): string {
 export function getGeminiApiKey(): string {
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && saved.trim() && saved.trim() !== 'undefined' && saved.trim() !== 'null') {
+    // Purge known suspended key if cached in user's browser localStorage
+    if (saved && (saved.includes('AQ.Ab8RN6KbKxeN') || saved.trim() === 'undefined' || saved.trim() === 'null')) {
+      localStorage.removeItem(STORAGE_KEY);
+    } else if (saved && saved.trim()) {
       return saved.trim();
     }
   }
