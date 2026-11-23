@@ -36,8 +36,14 @@ export function getDefaultGeminiApiKey(): string {
 export function getGeminiApiKey(): string {
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem(STORAGE_KEY);
-    // Purge known suspended key if cached in user's browser localStorage
-    if (saved && (saved.includes('AQ.Ab8RN6KbKxeN') || saved.trim() === 'undefined' || saved.trim() === 'null')) {
+    // Purge known suspended keys if cached in user's browser localStorage
+    if (
+      saved &&
+      (saved.includes('AQ.Ab8RN6KbKxeN') ||
+       saved.includes('AQ.Ab8RN6K4x') ||
+       saved.trim() === 'undefined' ||
+       saved.trim() === 'null')
+    ) {
       localStorage.removeItem(STORAGE_KEY);
     } else if (saved && saved.trim()) {
       return saved.trim();
@@ -424,7 +430,12 @@ Instructions:
         if (!response.ok) {
           const errJson = await response.json().catch(() => ({}));
           const errMsg = errJson?.error?.message || response.statusText;
+          if (response.status === 403) {
+            setGeminiApiKey('');
+            throw new Error(`Gemini API key rejected (403): ${errMsg}. Stale cached key has been cleared.`);
+          }
           if (response.status === 400 && errMsg.includes('API_KEY_INVALID')) {
+            setGeminiApiKey('');
             throw new Error('Invalid Gemini API Key. Please verify your key from Google AI Studio.');
           }
           // If model doesn't support image input (e.g. non-vision model), gracefully skip to next candidate!

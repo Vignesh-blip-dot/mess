@@ -240,6 +240,9 @@ Instructions:
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const msg = errorData?.error?.message || `HTTP ${response.status}`;
+        if (response.status === 403) {
+          setGeminiApiKey('');
+        }
         lastError = new Error(msg);
         continue;
       }

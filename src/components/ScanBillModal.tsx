@@ -197,6 +197,10 @@ export function ScanBillModal({
       if (err.message?.includes('limit reached') || err.message?.includes('rate limit')) {
         setCooldownSeconds(15);
       }
+      if (err.message?.includes('403') || err.message?.includes('suspended') || err.message?.includes('Invalid Gemini API Key')) {
+        setShowApiKeyInput(true);
+        setApiKey(getGeminiApiKey());
+      }
       setErrorMessage(err.message || 'Failed to scan bill. Please check the image and your API key.');
       setStep('upload');
     }
