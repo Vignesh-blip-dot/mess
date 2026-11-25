@@ -15,11 +15,14 @@ import {
   Layers,
   Utensils,
   AlertTriangle,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { Ingredient, MealType } from '../types';
 import {
   getGeminiApiKey,
   setGeminiApiKey,
+  isSuspendedKey,
 } from '../lib/geminiBillScanner';
 import {
   scanMealUsageSheet,
@@ -52,9 +55,19 @@ export function ScanUsageModal({
   const [step, setStep] = useState<'upload' | 'scanning' | 'review'>('upload');
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [apiKey, setApiKey] = useState<string>(() => getGeminiApiKey());
-  const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(false);
-  const [tempApiKey, setTempApiKey] = useState<string>(() => getGeminiApiKey());
+  const [apiKey, setApiKey] = useState<string>(() => {
+    const k = getGeminiApiKey();
+    return isSuspendedKey(k) ? '' : k;
+  });
+  const [showApiKeyInput, setShowApiKeyInput] = useState<boolean>(() => {
+    const k = getGeminiApiKey();
+    return !k || isSuspendedKey(k);
+  });
+  const [showKeyPassword, setShowKeyPassword] = useState<boolean>(false);
+  const [tempApiKey, setTempApiKey] = useState<string>(() => {
+    const k = getGeminiApiKey();
+    return isSuspendedKey(k) ? '' : k;
+  });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [scanStatusMessage, setScanStatusMessage] = useState('Initializing AI...');
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
@@ -85,9 +98,16 @@ export function ScanUsageModal({
   useEffect(() => {
     if (isOpen) {
       const existingKey = getGeminiApiKey();
-      setApiKey(existingKey);
-      setTempApiKey(existingKey);
-      setShowApiKeyInput(!existingKey);
+      if (isSuspendedKey(existingKey)) {
+        setGeminiApiKey('');
+        setApiKey('');
+        setTempApiKey('');
+        setShowApiKeyInput(true);
+      } else {
+        setApiKey(existingKey);
+        setTempApiKey(existingKey);
+        setShowApiKeyInput(!existingKey);
+      }
     }
   }, [isOpen]);
 
@@ -140,6 +160,10 @@ export function ScanUsageModal({
       setErrorMessage('Please enter a valid Gemini API key.');
       return;
     }
+    if (isSuspendedKey(trimmed)) {
+      setErrorMessage('This key belongs to the suspended Google account (project:664988205754). Please paste your new key starting with AQ.Ab8RN6L7...');
+      return;
+    }
     setGeminiApiKey(trimmed);
     setApiKey(trimmed);
     setShowApiKeyInput(false);
@@ -152,9 +176,12 @@ export function ScanUsageModal({
       return;
     }
     const activeKey = (apiKey.trim() || tempApiKey.trim() || getGeminiApiKey()).trim();
-    if (!activeKey) {
+    if (!activeKey || isSuspendedKey(activeKey)) {
+      setGeminiApiKey('');
+      setApiKey('');
+      setTempApiKey('');
       setShowApiKeyInput(true);
-      setErrorMessage('A Gemini API key is required to analyze the usage sheet.');
+      setErrorMessage('Please paste your new Gemini API key below and click "Save Key".');
       return;
     }
 
@@ -197,8 +224,10 @@ export function ScanUsageModal({
         setCooldownSeconds(15);
       }
       if (err.message?.includes('403') || err.message?.includes('suspended') || err.message?.includes('Invalid Gemini API Key')) {
+        setGeminiApiKey('');
+        setApiKey('');
+        setTempApiKey('');
         setShowApiKeyInput(true);
-        setApiKey(getGeminiApiKey());
       }
       setErrorMessage(err.message || 'Failed to scan usage sheet. Please check the image and your API key.');
       setStep('upload');
@@ -212,9 +241,12 @@ export function ScanUsageModal({
     }
 
     const activeKey = (apiKey.trim() || tempApiKey.trim() || getGeminiApiKey()).trim();
-    if (!activeKey) {
+    if (!activeKey || isSuspendedKey(activeKey)) {
+      setGeminiApiKey('');
+      setApiKey('');
+      setTempApiKey('');
       setShowApiKeyInput(true);
-      setErrorMessage('A Gemini API key is required to analyze the usage sheet.');
+      setErrorMessage('Please paste your new Gemini API key below and click "Save Key".');
       return;
     }
 
@@ -397,7 +429,7 @@ export function ScanUsageModal({
                 <span>Gemini API Key</span>
                 {apiKey ? (
                   <span className="text-[10px] font-mono-fig text-[#193d2c] bg-[#e6f0ea] px-1.5 py-0.2 rounded border border-[#193d2c]/20">
-                    Configured
+                    Configured ({apiKey.slice(0, 7)}...{apiKey.slice(-4)})
                   </span>
                 ) : (
                   <span className="text-[10px] font-mono-fig text-[#942426] bg-[#faeaea] px-1.5 py-0.2 rounded border border-[#942426]/20">
@@ -417,16 +449,28 @@ export function ScanUsageModal({
             {showApiKeyInput && (
               <div className="space-y-2 pt-1 border-t border-[#e5e0d5]">
                 <p className="text-[11px] text-[#59635e]">
-                  Gemini Flash Vision requires a free API key from Google AI Studio. The key is saved locally in your browser.
+                  Gemini Flash Vision requires an active API key from Google AI Studio. Paste your new key below.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="password"
-                    placeholder="Paste your Gemini API key (AIzaSy...)"
-                    value={tempApiKey}
-                    onChange={(e) => setTempApiKey(e.target.value)}
-                    className="flex-1 px-2.5 py-1.5 text-xs bg-white border border-[#e5e0d5] rounded-sm text-[#131715] font-mono-fig focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
-                  />
+                  <div className="relative flex-1">
+                    <input
+                      type={showKeyPassword ? 'text' : 'password'}
+                      placeholder="Paste your new Gemini API key (AQ.Ab8RN6L7...)"
+                      value={tempApiKey}
+                      onChange={(e) => setTempApiKey(e.target.value)}
+                      className="w-full pl-2.5 pr-8 py-1.5 text-xs bg-white border border-[#e5e0d5] rounded-sm text-[#131715] font-mono-fig focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
+                    />
+                    {tempApiKey && (
+                      <button
+                        type="button"
+                        onClick={() => setShowKeyPassword(!showKeyPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[#59635e] hover:text-[#131715] cursor-pointer"
+                        title={showKeyPassword ? 'Hide Key' : 'Show Key'}
+                      >
+                        {showKeyPassword ? <EyeOff size={13} /> : <Eye size={13} />}
+                      </button>
+                    )}
+                  </div>
                   <div className="flex gap-2 shrink-0">
                     <button
                       type="button"
@@ -435,6 +479,20 @@ export function ScanUsageModal({
                     >
                       Save Key
                     </button>
+                    {tempApiKey && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTempApiKey('');
+                          setApiKey('');
+                          setGeminiApiKey('');
+                        }}
+                        className="px-2 py-1.5 bg-[#faeaea] border border-[#942426]/20 text-[#942426] hover:bg-[#f4dcdb] rounded-sm transition-colors text-xs cursor-pointer"
+                        title="Clear current key"
+                      >
+                        Clear
+                      </button>
+                    )}
                     <a
                       href="https://aistudio.google.com/app/apikey"
                       target="_blank"

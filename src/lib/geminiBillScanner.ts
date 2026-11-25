@@ -26,6 +26,13 @@ export interface ExtractedBillData {
   items: ExtractedBillItem[];
 }
 
+export const SUSPENDED_KEY_PREFIXES = ['AQ.Ab8RN6KbKxeN', 'AQ.Ab8RN6K4x'];
+
+export function isSuspendedKey(key?: string | null): boolean {
+  if (!key || typeof key !== 'string') return false;
+  return SUSPENDED_KEY_PREFIXES.some((prefix) => key.includes(prefix));
+}
+
 export function getDefaultGeminiApiKey(): string {
   return '';
 }
@@ -39,8 +46,7 @@ export function getGeminiApiKey(): string {
     // Purge known suspended keys if cached in user's browser localStorage
     if (
       saved &&
-      (saved.includes('AQ.Ab8RN6KbKxeN') ||
-       saved.includes('AQ.Ab8RN6K4x') ||
+      (isSuspendedKey(saved) ||
        saved.trim() === 'undefined' ||
        saved.trim() === 'null')
     ) {
@@ -52,7 +58,7 @@ export function getGeminiApiKey(): string {
 
   try {
     const viteKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (viteKey && typeof viteKey === 'string' && viteKey.trim()) {
+    if (viteKey && typeof viteKey === 'string' && viteKey.trim() && !isSuspendedKey(viteKey)) {
       return viteKey.trim();
     }
   } catch {
@@ -61,7 +67,7 @@ export function getGeminiApiKey(): string {
 
   try {
     const procKey = process.env.GEMINI_API_KEY;
-    if (procKey && typeof procKey === 'string' && procKey.trim()) {
+    if (procKey && typeof procKey === 'string' && procKey.trim() && !isSuspendedKey(procKey)) {
       return procKey.trim();
     }
   } catch {
