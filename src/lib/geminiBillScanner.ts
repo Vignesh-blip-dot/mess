@@ -345,14 +345,13 @@ Instructions:
           discovered.sort((a: string, b: string) => {
             const getScore = (name: string) => {
               const lower = name.toLowerCase();
-              if (lower === 'gemini-1.5-flash') return 100;
-              if (lower === 'gemini-1.5-flash-8b') return 98;
-              if (lower === 'gemini-2.0-flash') return 96;
-              if (lower === 'gemini-2.0-flash-001') return 94;
-              if (lower === 'gemini-1.5-flash-latest') return 92;
-              if (lower === 'gemini-flash-latest') return 90;
-              if (lower.includes('1.5-flash')) return 88;
-              if (lower.includes('2.0-flash')) return 85;
+              if (lower === 'gemini-flash-lite-latest') return 100;
+              if (lower === 'gemini-3.5-flash-lite') return 98;
+              if (lower === 'gemini-3.8-flash') return 95;
+              if (lower === 'gemini-flash-latest') return 92;
+              if (lower.includes('flash-lite')) return 90;
+              if (lower.includes('3.5-flash')) return 88;
+              if (lower.includes('3.8-flash')) return 86;
               if (lower.includes('flash')) return 75;
               if (lower.includes('pro')) return 50;
               return 10;
@@ -375,7 +374,7 @@ Instructions:
 
   // Fallback candidate list if discovery returned empty
   if (candidateModels.length === 0) {
-    candidateModels = ['gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-2.0-flash', 'gemini-1.5-flash-latest'];
+    candidateModels = ['gemini-flash-lite-latest', 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
   }
 
   let rawResponseText = '';
