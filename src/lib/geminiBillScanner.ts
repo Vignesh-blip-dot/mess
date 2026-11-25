@@ -345,22 +345,22 @@ Instructions:
           discovered.sort((a: string, b: string) => {
             const getScore = (name: string) => {
               const lower = name.toLowerCase();
-              if (lower === 'gemini-2.0-flash') return 100;
-              if (lower === 'gemini-2.0-flash-001') return 98;
-              if (lower === 'gemini-1.5-flash-8b') return 96;
-              if (lower === 'gemini-1.5-flash') return 94;
+              if (lower === 'gemini-1.5-flash') return 100;
+              if (lower === 'gemini-1.5-flash-8b') return 98;
+              if (lower === 'gemini-2.0-flash') return 96;
+              if (lower === 'gemini-2.0-flash-001') return 94;
               if (lower === 'gemini-1.5-flash-latest') return 92;
               if (lower === 'gemini-flash-latest') return 90;
-              if (lower.includes('2.0-flash')) return 88;
-              if (lower.includes('1.5-flash')) return 85;
+              if (lower.includes('1.5-flash')) return 88;
+              if (lower.includes('2.0-flash')) return 85;
               if (lower.includes('flash')) return 75;
               if (lower.includes('pro')) return 50;
               return 10;
             };
             return getScore(b) - getScore(a);
           });
-          // Pick top 4 vision models
-          candidateModels = discovered.slice(0, 4);
+          // Pick top 5 vision models
+          candidateModels = discovered.slice(0, 5);
         }
       }
     } else if (listRes.status === 400) {
@@ -375,7 +375,7 @@ Instructions:
 
   // Fallback candidate list if discovery returned empty
   if (candidateModels.length === 0) {
-    candidateModels = ['gemini-2.0-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-flash-latest', 'gemini-2.0-flash-001'];
+    candidateModels = ['gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-2.0-flash', 'gemini-1.5-flash-latest'];
   }
 
   let rawResponseText = '';
@@ -425,6 +425,19 @@ Instructions:
             onProgress?.(`Switching to backup model...`);
             await new Promise((r) => setTimeout(r, 1500));
             break;
+          }
+        }
+
+        if (response.status === 503 || response.status === 500 || response.status === 504) {
+          if (attempt === 0) {
+            onProgress?.(`Model ${model} is busy (503 High Demand). Retrying in 2.5s...`);
+            await new Promise((r) => setTimeout(r, 2500));
+            continue;
+          } else {
+            onProgress?.(`Model ${model} is at capacity. Switching to backup model...`);
+            lastError = new Error(`Model ${model} temporarily unavailable (503)`);
+            await new Promise((r) => setTimeout(r, 1000));
+            break; // Try next candidate model
           }
         }
 

@@ -174,11 +174,14 @@ Instructions:
             );
           });
 
-        if (discovered.includes('gemini-2.0-flash')) {
-          candidateModels.push('gemini-2.0-flash');
+        if (discovered.includes('gemini-1.5-flash')) {
+          candidateModels.push('gemini-1.5-flash');
         }
         if (discovered.includes('gemini-1.5-flash-8b')) {
           candidateModels.push('gemini-1.5-flash-8b');
+        }
+        if (discovered.includes('gemini-2.0-flash')) {
+          candidateModels.push('gemini-2.0-flash');
         }
         if (discovered.includes('gemini-1.5-flash-latest')) {
           candidateModels.push('gemini-1.5-flash-latest');
@@ -195,7 +198,7 @@ Instructions:
   }
 
   if (candidateModels.length === 0) {
-    candidateModels = ['gemini-2.0-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-flash-latest', 'gemini-1.5-flash'];
+    candidateModels = ['gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-2.0-flash', 'gemini-1.5-flash-latest'];
   }
 
   let rawJsonText = '';
