@@ -1,9 +1,12 @@
 import { Ingredient, MealType } from '../types';
+import { findBestIngredientMatch } from './fuzzyMatch';
 import {
   getGeminiApiKey,
   optimizeImageForOcr,
-} from './geminiBillScanner';
-import { calculateSimilarity, findBestIngredientMatch } from './fuzzyMatch';
+  resolveBestUnit,
+  callGeminiVisionJson,
+  parseGeminiJsonResponse,
+} from './geminiCore';
 
 export interface ExtractedUsageItem {
   id: string;
@@ -22,55 +25,6 @@ export interface ExtractedUsageData {
   meal_type: MealType | null;
   is_continued?: boolean;
   items: ExtractedUsageItem[];
-}
-
-/**
- * Resolves the extracted unit string to one of the ingredient's available units.
- */
-function resolveBestUnit(
-  extractedUnit: string | undefined,
-  ingredient: Ingredient
-): string {
-  const availableUnits = [
-    ingredient.unit,
-    ...(ingredient.conversions?.map((c) => c.unit_name) || []),
-  ];
-
-  if (!extractedUnit || !extractedUnit.trim()) {
-    return ingredient.conversions?.[0]?.unit_name || ingredient.unit;
-  }
-
-  const rawU = extractedUnit.toLowerCase().trim();
-  const exact = availableUnits.find((u) => u.toLowerCase() === rawU);
-  if (exact) return exact;
-
-  if (rawU.includes('bag')) {
-    const bagUnit = availableUnits.find((u) => u.toLowerCase().includes('bag'));
-    if (bagUnit) return bagUnit;
-  }
-  if (rawU.includes('tin')) {
-    const tinUnit = availableUnits.find((u) => u.toLowerCase().includes('tin'));
-    if (tinUnit) return tinUnit;
-  }
-  if (rawU.includes('pack') || rawU.includes('pkt') || rawU.includes('pouch')) {
-    const pktUnit = availableUnits.find((u) =>
-      u.toLowerCase().includes('packet') || u.toLowerCase().includes('pouch')
-    );
-    if (pktUnit) return pktUnit;
-  }
-  if (rawU.includes('quintal') || rawU.includes('qntl')) {
-    const qUnit = availableUnits.find((u) => u.toLowerCase().includes('quintal'));
-    if (qUnit) return qUnit;
-  }
-
-  if (rawU === 'kg' || rawU === 'kgs' || rawU === 'kilo') {
-    if (ingredient.unit.toLowerCase() === 'kg') return ingredient.unit;
-  }
-  if (rawU === 'l' || rawU === 'ltr' || rawU === 'litre' || rawU === 'liter') {
-    if (ingredient.unit.toLowerCase().includes('l')) return ingredient.unit;
-  }
-
-  return ingredient.conversions?.[0]?.unit_name || ingredient.unit;
 }
 
 /**
@@ -152,131 +106,19 @@ Instructions:
   ]
 }`;
 
-  onProgress?.('Checking active Gemini Vision models on your account...');
-
-  let candidateModels: string[] = [];
-  try {
-    const listRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
-    );
-    if (listRes.ok) {
-      const listData = await listRes.json();
-      if (Array.isArray(listData?.models)) {
-        const nonVisionKeywords = ['tts', 'audio', 'embed', 'imagen', 'image-generation', 'realtime', 'whisper', 'robotics'];
-        const discovered = listData.models
-          .map((m: any) => m.name?.replace('models/', ''))
-          .filter((name: string) => {
-            if (!name) return false;
-            const lower = name.toLowerCase();
-            return (
-              (lower.includes('flash') || lower.includes('pro')) &&
-              !nonVisionKeywords.some((kw) => lower.includes(kw))
-            );
-          });
-
-        if (discovered.includes('gemini-flash-lite-latest')) {
-          candidateModels.push('gemini-flash-lite-latest');
-        }
-        if (discovered.includes('gemini-3.5-flash-lite')) {
-          candidateModels.push('gemini-3.5-flash-lite');
-        }
-        if (discovered.includes('gemini-3.8-flash')) {
-          candidateModels.push('gemini-3.8-flash');
-        }
-        if (discovered.includes('gemini-flash-latest')) {
-          candidateModels.push('gemini-flash-latest');
-        }
-        for (const m of discovered) {
-          if (!candidateModels.includes(m)) {
-            candidateModels.push(m);
-          }
-        }
-      }
-    }
-  } catch {
-    // ignore
-  }
-
-  if (candidateModels.length === 0) {
-    candidateModels = ['gemini-flash-lite-latest', 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
-  }
-
-  let rawJsonText = '';
-  let lastError: any = null;
-
-  for (const model of candidateModels) {
-    try {
-      onProgress?.(`Extracting meal usage items with ${model}...`);
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  { text: systemPrompt },
-                  {
-                    inline_data: {
-                      mime_type: mimeType,
-                      data: base64Data,
-                    },
-                  },
-                ],
-              },
-            ],
-            generationConfig: {
-              temperature: 0.1,
-              response_mime_type: 'application/json',
-            },
-          }),
-        }
-      );
-
-      if (response.status === 429) {
-        lastError = new Error('Daily rate limit reached. Waiting briefly...');
-        await new Promise((res) => setTimeout(res, 3500));
-        continue;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const msg = errorData?.error?.message || `HTTP ${response.status}`;
-        if (response.status === 403) {
-          setGeminiApiKey('');
-        }
-        lastError = new Error(msg);
-        continue;
-      }
-
-      const result = await response.json();
-      const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (text) {
-        rawJsonText = text;
-        break;
-      }
-    } catch (err: any) {
-      lastError = err;
-    }
-  }
-
-  if (!rawJsonText) {
-    throw new Error(
-      lastError?.message ||
-        'Unable to process usage sheet. Please ensure your Gemini API key is valid and image is clear.'
-    );
-  }
+  const rawJsonText = await callGeminiVisionJson({
+    apiKey,
+    systemPrompt,
+    mimeType,
+    base64Data,
+    actionLabel: 'Extracting meal usage items',
+    onProgress,
+  });
 
   let parsed: any;
   try {
-    const cleaned = rawJsonText
-      .replace(/^```json/im, '')
-      .replace(/^```/im, '')
-      .replace(/```$/im, '')
-      .trim();
-    parsed = JSON.parse(cleaned);
-  } catch (err) {
+    parsed = parseGeminiJsonResponse(rawJsonText);
+  } catch {
     console.error('Failed to parse Gemini usage response as JSON:', rawJsonText);
     throw new Error('AI response was not valid JSON. Please try scanning again.');
   }
@@ -324,8 +166,7 @@ Instructions:
 
   let validDate = null;
   if (parsed?.usage_date && /^\d{4}-\d{2}-\d{2}$/.test(parsed.usage_date)) {
-    const currentYear = new Date().getFullYear();
-    // Autocorrect if OCR mistakenly tagged 2024 for an active 2026 mess session
+    // Autocorrect if OCR mistakenly tagged 2024 for an active 2026+ mess session
     if (parsed.usage_date.startsWith('2024-') && currentYear >= 2026) {
       validDate = parsed.usage_date.replace(/^2024-/, `${currentYear}-`);
     } else {

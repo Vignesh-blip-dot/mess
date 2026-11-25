@@ -1,7 +1,27 @@
 import { Ingredient } from '../types';
-import { calculateSimilarity, findBestIngredientMatch } from './fuzzyMatch';
+import { findBestIngredientMatch } from './fuzzyMatch';
+import {
+  SUSPENDED_KEY_PREFIXES,
+  isSuspendedKey,
+  getDefaultGeminiApiKey,
+  getGeminiApiKey,
+  setGeminiApiKey,
+  fileToBase64,
+  optimizeImageForOcr,
+  resolveBestUnit,
+  callGeminiVisionJson,
+  parseGeminiJsonResponse,
+} from './geminiCore';
 
-const STORAGE_KEY = 'mess_gemini_api_key';
+export {
+  SUSPENDED_KEY_PREFIXES,
+  isSuspendedKey,
+  getDefaultGeminiApiKey,
+  getGeminiApiKey,
+  setGeminiApiKey,
+  fileToBase64,
+  optimizeImageForOcr,
+};
 
 export interface ExtractedBillItem {
   id: string;
@@ -24,197 +44,6 @@ export interface ExtractedBillData {
   total_amount: number | null;
   is_continued?: boolean;
   items: ExtractedBillItem[];
-}
-
-export const SUSPENDED_KEY_PREFIXES = ['AQ.Ab8RN6KbKxeN', 'AQ.Ab8RN6K4x'];
-
-export function isSuspendedKey(key?: string | null): boolean {
-  if (!key || typeof key !== 'string') return false;
-  return SUSPENDED_KEY_PREFIXES.some((prefix) => key.includes(prefix));
-}
-
-export function getDefaultGeminiApiKey(): string {
-  return '';
-}
-
-/**
- * Retrieves the Gemini API key from localStorage, Vite environment variables, or built-in default.
- */
-export function getGeminiApiKey(): string {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    // Purge known suspended keys if cached in user's browser localStorage
-    if (
-      saved &&
-      (isSuspendedKey(saved) ||
-       saved.trim() === 'undefined' ||
-       saved.trim() === 'null')
-    ) {
-      localStorage.removeItem(STORAGE_KEY);
-    } else if (saved && saved.trim()) {
-      return saved.trim();
-    }
-  }
-
-  try {
-    const viteKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (viteKey && typeof viteKey === 'string' && viteKey.trim() && !isSuspendedKey(viteKey)) {
-      return viteKey.trim();
-    }
-  } catch {
-    // ignore
-  }
-
-  try {
-    const procKey = process.env.GEMINI_API_KEY;
-    if (procKey && typeof procKey === 'string' && procKey.trim() && !isSuspendedKey(procKey)) {
-      return procKey.trim();
-    }
-  } catch {
-    // ignore
-  }
-
-  return getDefaultGeminiApiKey();
-}
-
-/**
- * Saves the Gemini API key into localStorage.
- */
-export function setGeminiApiKey(key: string): void {
-  if (typeof window !== 'undefined') {
-    if (key.trim()) {
-      localStorage.setItem(STORAGE_KEY, key.trim());
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }
-}
-
-/**
- * Converts a raw File or Blob into base64.
- */
-export async function fileToBase64(file: File | Blob): Promise<{ base64Data: string; mimeType: string }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      const commaIndex = result.indexOf(',');
-      if (commaIndex === -1) {
-        reject(new Error('Failed to read file as data URL'));
-        return;
-      }
-      const base64Data = result.substring(commaIndex + 1);
-      const mimeType = file.type || 'image/jpeg';
-      resolve({ base64Data, mimeType });
-    };
-    reader.onerror = (error) => reject(error);
-    reader.readAsDataURL(file);
-  });
-}
-
-/**
- * Optimizes, downsizes, and compresses invoice photos to max 1200px.
- * This drastically reduces tokens-per-minute (TPM) consumption by ~75%,
- * completely avoiding Gemini free-tier 429 quota exhaustion.
- */
-export async function optimizeImageForOcr(file: File | Blob): Promise<{ base64Data: string; mimeType: string }> {
-  if (!file.type.startsWith('image/')) {
-    return fileToBase64(file);
-  }
-
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const MAX_DIM = 1200;
-      let width = img.width;
-      let height = img.height;
-
-      if (width > MAX_DIM || height > MAX_DIM) {
-        if (width > height) {
-          height = Math.round((height * MAX_DIM) / width);
-          width = MAX_DIM;
-        } else {
-          width = Math.round((width * MAX_DIM) / height);
-          height = MAX_DIM;
-        }
-      }
-
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        fileToBase64(file).then(resolve).catch(reject);
-        return;
-      }
-
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0, width, height);
-
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-      const commaIndex = dataUrl.indexOf(',');
-      const base64Data = dataUrl.substring(commaIndex + 1);
-      resolve({ base64Data, mimeType: 'image/jpeg' });
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      fileToBase64(file).then(resolve).catch(reject);
-    };
-    img.src = url;
-  });
-}
-
-/**
- * Resolves the packaging unit against an ingredient's available units.
- */
-function resolveBestUnit(
-  extractedUnit: string | undefined,
-  ingredient: Ingredient
-): string {
-  const availableUnits = [
-    ingredient.unit,
-    ...(ingredient.conversions?.map((c) => c.unit_name) || []),
-  ];
-
-  if (!extractedUnit || !extractedUnit.trim()) {
-    return ingredient.conversions?.[0]?.unit_name || ingredient.unit;
-  }
-
-  const rawU = extractedUnit.toLowerCase().trim();
-
-  const exact = availableUnits.find((u) => u.toLowerCase() === rawU);
-  if (exact) return exact;
-
-  if (rawU.includes('bag')) {
-    const bagUnit = availableUnits.find((u) => u.toLowerCase().includes('bag'));
-    if (bagUnit) return bagUnit;
-  }
-  if (rawU.includes('tin')) {
-    const tinUnit = availableUnits.find((u) => u.toLowerCase().includes('tin'));
-    if (tinUnit) return tinUnit;
-  }
-  if (rawU.includes('pack') || rawU.includes('pkt') || rawU.includes('pouch')) {
-    const pktUnit = availableUnits.find((u) =>
-      u.toLowerCase().includes('packet') || u.toLowerCase().includes('pouch')
-    );
-    if (pktUnit) return pktUnit;
-  }
-  if (rawU.includes('quintal') || rawU.includes('qntl')) {
-    const qUnit = availableUnits.find((u) => u.toLowerCase().includes('quintal'));
-    if (qUnit) return qUnit;
-  }
-
-  if (rawU === 'kg' || rawU === 'kgs' || rawU === 'kilo') {
-    if (ingredient.unit.toLowerCase() === 'kg') return ingredient.unit;
-  }
-  if (rawU === 'l' || rawU === 'ltr' || rawU === 'litre' || rawU === 'liter') {
-    if (ingredient.unit.toLowerCase().includes('l')) return ingredient.unit;
-  }
-
-  return ingredient.conversions?.[0]?.unit_name || ingredient.unit;
 }
 
 /**
@@ -317,192 +146,19 @@ Instructions:
   ]
 }`;
 
-  onProgress?.('Checking active Gemini Vision models on your account...');
-
-  // Discovered models list
-  let candidateModels: string[] = [];
-  try {
-    const listRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
-    );
-    if (listRes.ok) {
-      const listData = await listRes.json();
-      if (Array.isArray(listData?.models)) {
-        const nonVisionKeywords = ['tts', 'audio', 'embed', 'imagen', 'image-generation', 'realtime', 'whisper', 'robotics'];
-        const discovered = listData.models
-          .filter(
-            (m: any) =>
-              Array.isArray(m.supportedGenerationMethods) &&
-              m.supportedGenerationMethods.includes('generateContent')
-          )
-          .map((m: any) => m.name.replace(/^models\//, ''))
-          .filter((name: string) => {
-            const lower = name.toLowerCase();
-            return !nonVisionKeywords.some((kw) => lower.includes(kw));
-          });
-
-        if (discovered.length > 0) {
-          discovered.sort((a: string, b: string) => {
-            const getScore = (name: string) => {
-              const lower = name.toLowerCase();
-              if (lower === 'gemini-flash-lite-latest') return 100;
-              if (lower === 'gemini-3.5-flash-lite') return 98;
-              if (lower === 'gemini-3.8-flash') return 95;
-              if (lower === 'gemini-flash-latest') return 92;
-              if (lower.includes('flash-lite')) return 90;
-              if (lower.includes('3.5-flash')) return 88;
-              if (lower.includes('3.8-flash')) return 86;
-              if (lower.includes('flash')) return 75;
-              if (lower.includes('pro')) return 50;
-              return 10;
-            };
-            return getScore(b) - getScore(a);
-          });
-          // Pick top 5 vision models
-          candidateModels = discovered.slice(0, 5);
-        }
-      }
-    } else if (listRes.status === 400) {
-      const errJson = await listRes.json().catch(() => ({}));
-      if (errJson?.error?.message?.includes('API_KEY_INVALID')) {
-        throw new Error('Invalid Gemini API Key. Please verify your key from Google AI Studio.');
-      }
-    }
-  } catch (err: any) {
-    if (err.message?.includes('Invalid Gemini API Key')) throw err;
-  }
-
-  // Fallback candidate list if discovery returned empty
-  if (candidateModels.length === 0) {
-    candidateModels = ['gemini-flash-lite-latest', 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
-  }
-
-  let rawResponseText = '';
-  let lastError: any = null;
-
-  for (const model of candidateModels) {
-    onProgress?.(`Extracting invoice items using ${model}...`);
-
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-        const requestBody = {
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                { text: systemPrompt },
-                {
-                  inlineData: {
-                    mimeType,
-                    data: base64Data,
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.1,
-          },
-        };
-
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody),
-        });
-
-        if (response.status === 429) {
-          if (attempt === 0) {
-            onProgress?.(`Rate limit reached on ${model}. Pausing 3.5s before automatic retry...`);
-            await new Promise((r) => setTimeout(r, 3500));
-            continue; // Retry once after backoff
-          } else {
-            // Move to backup model
-            onProgress?.(`Switching to backup model...`);
-            await new Promise((r) => setTimeout(r, 1500));
-            break;
-          }
-        }
-
-        if (response.status === 503 || response.status === 500 || response.status === 504) {
-          if (attempt === 0) {
-            onProgress?.(`Model ${model} is busy (503 High Demand). Retrying in 2.5s...`);
-            await new Promise((r) => setTimeout(r, 2500));
-            continue;
-          } else {
-            onProgress?.(`Model ${model} is at capacity. Switching to backup model...`);
-            lastError = new Error(`Model ${model} temporarily unavailable (503)`);
-            await new Promise((r) => setTimeout(r, 1000));
-            break; // Try next candidate model
-          }
-        }
-
-        if (response.status === 404) {
-          // Model not found on this endpoint, try next candidate
-          break;
-        }
-
-        if (!response.ok) {
-          const errJson = await response.json().catch(() => ({}));
-          const errMsg = errJson?.error?.message || response.statusText;
-          if (response.status === 403) {
-            setGeminiApiKey('');
-            throw new Error(`Gemini API key rejected (403): ${errMsg}. Stale cached key has been cleared.`);
-          }
-          if (response.status === 400 && errMsg.includes('API_KEY_INVALID')) {
-            setGeminiApiKey('');
-            throw new Error('Invalid Gemini API Key. Please verify your key from Google AI Studio.');
-          }
-          // If model doesn't support image input (e.g. non-vision model), gracefully skip to next candidate!
-          if (response.status === 400 && (errMsg.includes('modality') || errMsg.includes('not enabled') || errMsg.includes('not supported'))) {
-            console.warn(`Model ${model} does not support image modality, trying next candidate:`, errMsg);
-            lastError = new Error(`Model ${model} does not accept images: ${errMsg}`);
-            break;
-          }
-          throw new Error(`Gemini API error (${response.status}): ${errMsg}`);
-        }
-
-        const data = await response.json();
-        const candidateText =
-          data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-        if (candidateText) {
-          rawResponseText = candidateText;
-          break;
-        }
-      } catch (err: any) {
-        lastError = err;
-        if (err.message?.includes('Invalid Gemini API Key')) throw err;
-      }
-    }
-
-    if (rawResponseText) break;
-  }
-
-  if (!rawResponseText) {
-    if (lastError?.message?.includes('429')) {
-      throw new Error(
-        'Google Gemini free tier request limit reached (15 requests/minute). Please wait 15–20 seconds for the quota to reset, then click Extract Line Items again.'
-      );
-    }
-    throw (
-      lastError ||
-      new Error('Failed to extract invoice text from the image. Please try a clearer photo.')
-    );
-  }
+  const rawResponseText = await callGeminiVisionJson({
+    apiKey,
+    systemPrompt,
+    mimeType,
+    base64Data,
+    actionLabel: 'Extracting invoice items',
+    onProgress,
+  });
 
   let parsed: any;
   try {
-    const cleaned = rawResponseText
-      .replace(/^```json\s*/i, '')
-      .replace(/^```\s*/i, '')
-      .replace(/\s*```$/i, '')
-      .trim();
-    parsed = JSON.parse(cleaned);
-  } catch (parseErr) {
+    parsed = parseGeminiJsonResponse(rawResponseText);
+  } catch {
     console.error('Failed to parse Gemini response JSON:', rawResponseText);
     throw new Error('Could not parse bill data into structured format. Please check the image.');
   }
@@ -530,9 +186,12 @@ Instructions:
     }
 
     const qty = Math.max(0.01, parseFloat(item.quantity) || 1);
-    const rateNum = typeof item.rate === 'number' && item.rate > 0
-      ? item.rate
-      : (item.rate ? parseFloat(item.rate) : null);
+    const rateNum =
+      typeof item.rate === 'number' && item.rate > 0
+        ? item.rate
+        : item.rate
+        ? parseFloat(item.rate)
+        : null;
 
     // Always calculate total_cost using rate inclusive of tax * quantity
     let cost = 0;
@@ -541,7 +200,8 @@ Instructions:
     } else if (item.total_cost && parseFloat(item.total_cost) > 0) {
       cost = parseFloat(item.total_cost);
     }
-    const finalRate = rateNum || (cost > 0 && qty > 0 ? Math.round((cost / qty) * 100) / 100 : null);
+    const finalRate =
+      rateNum || (cost > 0 && qty > 0 ? Math.round((cost / qty) * 100) / 100 : null);
 
     let resolvedUnit = item.unit || 'kg';
     if (matchedIng) {

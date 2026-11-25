@@ -161,7 +161,7 @@ export function ScanUsageModal({
       return;
     }
     if (isSuspendedKey(trimmed)) {
-      setErrorMessage('This key belongs to the suspended Google account (project:664988205754). Please paste your new key starting with AQ.Ab8RN6L7...');
+      setErrorMessage('This key belongs to a suspended or rejected Google Cloud project. Please paste an active Gemini API key from Google AI Studio.');
       return;
     }
     setGeminiApiKey(trimmed);
@@ -223,10 +223,11 @@ export function ScanUsageModal({
       if (err.message?.includes('limit reached') || err.message?.includes('rate limit')) {
         setCooldownSeconds(15);
       }
-      if (err.message?.includes('403') || err.message?.includes('suspended') || err.message?.includes('Invalid Gemini API Key')) {
+      if (err.message?.includes('403') || err.message?.includes('suspended') || err.message?.includes('Invalid Gemini API Key') || err.message?.includes('API_KEY_INVALID')) {
         setGeminiApiKey('');
-        setApiKey('');
-        setTempApiKey('');
+        const nextFallback = getGeminiApiKey();
+        setApiKey(nextFallback);
+        setTempApiKey(nextFallback);
         setShowApiKeyInput(true);
       }
       setErrorMessage(err.message || 'Failed to scan usage sheet. Please check the image and your API key.');
@@ -246,6 +247,7 @@ export function ScanUsageModal({
       setApiKey('');
       setTempApiKey('');
       setShowApiKeyInput(true);
+      setStep('upload');
       setErrorMessage('Please paste your new Gemini API key below and click "Save Key".');
       return;
     }
@@ -286,6 +288,16 @@ export function ScanUsageModal({
       console.error('Scan next page error:', err);
       if (err.message?.includes('limit reached') || err.message?.includes('rate limit')) {
         setCooldownSeconds(15);
+      }
+      if (err.message?.includes('403') || err.message?.includes('suspended') || err.message?.includes('Invalid Gemini API Key') || err.message?.includes('API_KEY_INVALID')) {
+        setGeminiApiKey('');
+        const nextFallback = getGeminiApiKey();
+        setApiKey(nextFallback);
+        setTempApiKey(nextFallback);
+        setShowApiKeyInput(true);
+        setErrorMessage(err.message || `Failed to scan Page ${targetPageNum}.`);
+        setStep('upload');
+        return;
       }
       setErrorMessage(err.message || `Failed to scan Page ${targetPageNum}.`);
       setStep('review');
@@ -455,7 +467,7 @@ export function ScanUsageModal({
                   <div className="relative flex-1">
                     <input
                       type={showKeyPassword ? 'text' : 'password'}
-                      placeholder="Paste your new Gemini API key (AQ.Ab8RN6L7...)"
+                      placeholder="Paste your Gemini API key from Google AI Studio"
                       value={tempApiKey}
                       onChange={(e) => setTempApiKey(e.target.value)}
                       className="w-full pl-2.5 pr-8 py-1.5 text-xs bg-white border border-[#e5e0d5] rounded-sm text-[#131715] font-mono-fig focus:outline-none focus:ring-1 focus:ring-[#193d2c]"
